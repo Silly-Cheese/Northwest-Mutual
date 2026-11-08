@@ -31,7 +31,7 @@
 .nw-policy-text{font-size:.74rem;color:#c3d7e8;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nw-collapse-toggle,.nw-sidebar-logout{border:0;background:transparent;color:#a9c4df;display:flex;align-items:center;justify-content:flex-start;gap:13px;border-radius:10px;min-height:39px;padding:9px 13px;width:100%;font-size:.82rem;font-weight:700}
 .nw-collapse-toggle:hover,.nw-sidebar-logout:hover{background:#ffffff12;color:#fff}
-.nw-sidebar-logout{display:none}
+.nw-sidebar-logout{display:flex}
 .nw-drawer-close{display:none}
 .nw-compact .nw-sidebar-top{padding:15px 9px}
 .nw-compact .nw-wordmark{justify-content:center;padding:8px 0}

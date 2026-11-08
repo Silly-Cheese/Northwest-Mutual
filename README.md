@@ -93,3 +93,16 @@ Keep the private service-account JSON **outside** GitHub and the public docs fol
 6. Customer checks claim status and prints the fictional insurance card; staff uses **Reports** to review activity.
 
 This is a ROLEPLAY service. Use **fictional information** only. Do not submit real patient health records, identity documents, or real insurance claims.
+
+
+## Navigation refresh
+
+The GitHub Pages site now uses a **responsive application navigation**:
+
+- Desktop: dark, grouped sidebar with active-page styling, pending claim count for staff, collapse/expand, coverage indicator, and quick access to the signed-in account.
+- Tablet and mobile: slide-out menu with backdrop and Escape-to-close; the most-used insurance pages are also accessible from a four-item bottom navigation on phones.
+- Owner administration and staff operations appear only for the appropriate account roles. Firestore rules still enforce all actual access rights.
+- Staff and owner options include Staff Center and Reports; owners additionally see Manage plans and Owner Desk.
+- The sidebar collapse preference is stored locally in the browser, not in Firebase.
+
+No Firebase Hosting, Firebase Functions, rules changes, or additional dependencies are required for this navigation update. GitHub Pages publishes it from main/docs.

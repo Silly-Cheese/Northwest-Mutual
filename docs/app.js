@@ -6,6 +6,9 @@ import {
 import {
   renderInsuranceCard, renderReports, reportsAction, reportsForm
 } from './gen3.js';
+import {
+  navigationStart, navigationEnd, canNavigate
+} from './navigation.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
@@ -46,7 +49,7 @@ const state = {
   loading: true, user: null, profile: null, policy: null, owner: false,
   tab: 'dashboard', mode: 'login', notice: null, busy: false,
   adminUsers: [], adminPolicies: [], planCatalog: [], claims: [], editPlanId: null,
-  reportStatus: 'all', reportQuery: ''
+  reportStatus: 'all', reportQuery: '', navOpen: false, navCollapsed: false
 };
 
 function esc(value) {
@@ -139,23 +142,33 @@ function authPage() {
     '</div></section></div>';
 }
 
-function navbar() {
-  const nav = [
-    ['dashboard', 'Dashboard'], ['plans', 'Insurance Plans'], ['card', 'Insurance Card'], ['account', 'My Account']
-  ];
-  if (state.profile?.role === 'provider') nav.push(['claims', 'Provider Claims']);
-  else nav.push(['claims', 'Medical Claims']);
-  if (state.owner || state.profile?.role === 'staff') nav.push(['staff', 'Staff Center'], ['reports', 'Reports']);
-  if (state.owner) nav.push(['manage-plans', 'Manage Plans'], ['owner', 'Owner Desk']);
-  return '<header class="topbar"><div class="shell topbar-inner">' + brand() +
-    '<nav class="nav-links" aria-label="Main navigation">' +
-    nav.map(([key, title]) =>
-      '<button class="nav-link ' + (state.tab === key ? 'active' : '') +
-      '" data-action="tab" data-tab="' + key + '">' + title + '</button>'
-    ).join('') + '</nav><div class="top-actions">' +
-    '<span class="user-chip">' + esc(state.profile?.displayName || state.user?.email || 'Member') + '</span>' +
-    '<button class="btn btn-outline btn-small" data-action="logout">Sign out</button></div></div></header>';
+function navbar() { return navigationStart(state); }
+
+function setNavigationOpen(open) {
+  state.navOpen = Boolean(open);
+  const layout = root.querySelector('.nw-layout');
+  if (layout) layout.classList.toggle('nw-open', state.navOpen);
+  document.body.classList.toggle('nw-drawer-visible', state.navOpen);
+  const toggle = root.querySelector('[data-action="nav-toggle"]');
+  if (toggle) {
+    toggle.setAttribute('aria-expanded', String(state.navOpen));
+    toggle.setAttribute('aria-label', state.navOpen ? 'Close navigation menu' : 'Open navigation menu');
+  }
 }
+function setSidebarCollapsed(collapsed) {
+  state.navCollapsed = Boolean(collapsed);
+  const layout = root.querySelector('.nw-layout');
+  if (layout) layout.classList.toggle('nw-compact', state.navCollapsed);
+  const control = root.querySelector('[data-action="nav-collapse"]');
+  if (control) {
+    control.setAttribute('aria-label', state.navCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    control.title = state.navCollapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    const label = control.querySelector('.nw-collapse-label');
+    if (label) label.textContent = state.navCollapsed ? 'Expand menu' : 'Collapse menu';
+  }
+  try { localStorage.setItem('nw-sidebar-collapsed', String(state.navCollapsed)); } catch (_) {}
+}
+try { state.navCollapsed = localStorage.getItem('nw-sidebar-collapsed') === 'true'; } catch (_) {}
 
 function dashboardPage() {
   const policy = state.policy;
@@ -296,8 +309,10 @@ function render() {
     '<button class="btn btn-secondary btn-small" data-action="copy-member">Copy Member ID</button></div>';
   else if (state.tab === 'owner' && state.owner) page = ownerPage();
   else page = dashboardPage();
-  root.innerHTML = navbar() + '<main><div class="shell">' + noticeMarkup() +
-    page + '</div></main><footer class="footer">Northwest Mutual RP · Fictional medical insurance platform · No real coverage</footer>';
+  root.innerHTML = navbar() + '<main class="nw-main"><div class="shell">' + noticeMarkup() +
+    page + '</div></main><footer class="nw-footer">Northwest Mutual RP · Fictional medical insurance platform · No real coverage</footer>' +
+    navigationEnd();
+  document.body.classList.toggle('nw-drawer-visible', state.navOpen);
 }
 
 async function ensureProfile(user) {
@@ -345,6 +360,8 @@ onAuthStateChanged(auth, async user => {
   state.editPlanId = null;
   state.reportStatus = 'all';
   state.reportQuery = '';
+  state.navOpen = false;
+  document.body.classList.remove('nw-drawer-visible');
   state.tab = 'dashboard';
   state.notice = null;
   render();
@@ -368,19 +385,41 @@ onAuthStateChanged(auth, async user => {
 
 document.addEventListener('click', async event => {
   const button = event.target.closest('[data-action]');
-  if (!button || state.busy) return;
+  if (!button) return;
   const action = button.dataset.action;
+  if (action === 'nav-toggle') {
+    const opening = !state.navOpen;
+    setNavigationOpen(opening);
+    if (opening) root.querySelector('.nw-sidebar .nw-link')?.focus();
+    return;
+  }
+  if (action === 'nav-close') {
+    setNavigationOpen(false);
+    root.querySelector('[data-action="nav-toggle"]')?.focus();
+    return;
+  }
+  if (action === 'nav-collapse') {
+    setSidebarCollapsed(!state.navCollapsed);
+    return;
+  }
+  if (state.busy) return;
   if (action === 'mode') {
     state.mode = button.dataset.mode;
     state.notice = null; render(); return;
   }
   if (action === 'home') {
     event.preventDefault();
-    state.tab = 'dashboard'; state.notice = null; render(); return;
+    setNavigationOpen(false);
+    state.tab = 'dashboard'; state.notice = null; render();
+    window.scrollTo({top:0,behavior:'auto'});
+    return;
   }
   if (action === 'tab') {
+    if (!canNavigate(state, button.dataset.tab)) return;
+    setNavigationOpen(false);
     state.tab = button.dataset.tab;
     state.notice = null; render();
+    window.scrollTo({top:0,behavior:'auto'});
     if (['owner', 'staff', 'claims', 'plans', 'manage-plans', 'reports'].includes(state.tab)) {
       try {
         await loadExtras(state, db);
@@ -511,4 +550,14 @@ document.addEventListener('submit', async event => {
   } finally {
     state.busy = false;
   }
+});
+
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && state.navOpen) {
+    setNavigationOpen(false);
+    root.querySelector('[data-action="nav-toggle"]')?.focus();
+  }
+});
+window.addEventListener('resize', () => {
+  if (state.navOpen && window.innerWidth > 920) setNavigationOpen(false);
 });
