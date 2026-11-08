@@ -1,0 +1,12 @@
+{
+  "name": "northwest-mutual-rp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bootstrap:owner": "node scripts/bootstrap-owner.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0"
+  }
+}
