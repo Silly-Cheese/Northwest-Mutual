@@ -1,5 +1,5 @@
 import {
-  collection, doc, getDocs, addDoc, setDoc, updateDoc, query, where, serverTimestamp
+  collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, query, where, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 
 // Generation 2: medical-only fictional claims, provider and staff workflows.
@@ -130,7 +130,8 @@ export function renderClaims(s) {
     : 'Submit your own fictional medical expenses for coverage review. You need an active policy.';
   const field = isProvider
     ? '<div class="field"><label class="label">Patient Member ID</label>' +
-      '<input name="customerUid" class="input" maxlength="128" required placeholder="Paste member ID from customer portal"></div>'
+      '<input name="customerUid" class="input" maxlength="128" required autocomplete="off" placeholder="Paste member ID from customer portal">' +
+      '<p class="form-help">The patient needs an active Northwest Mutual RP policy. Coverage will be checked when you submit.</p></div>'
     : '';
   return title(heading, userHelp, isProvider ? 'MEDICAL PROVIDER' : 'CLAIMS CENTER') +
     '<div class="grid-2 claim-layout">' +
@@ -138,7 +139,7 @@ export function renderClaims(s) {
     (canFile ? '<form data-form="ex-submit-claim">' + field +
     '<div class="field"><label class="label">Facility name</label><input class="input" name="facility" maxlength="100" required placeholder="e.g. Northstar Medical Center"></div>' +
     '<div class="field"><label class="label">Invoice # <span class="required-label">Required</span></label>' +
-      '<input class="input" name="invoiceNumber" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._/ -]{0,63}" autocomplete="off" placeholder="e.g. NMC-2026-0042" required>' +
+      '<input class="input" name="invoiceNumber" maxlength="64" autocomplete="off" placeholder="e.g. NMC-2026-0042" required>' +
       '<p class="form-help">Enter the invoice number from the fictional medical bill. Claims cannot be submitted without one.</p></div>' +
     '<div class="field"><label class="label">Treatment / service date</label><input class="input" type="date" name="serviceDate" required></div>' +
     '<div class="field"><label class="label">Service type</label><select class="input" name="serviceType">' +
@@ -341,6 +342,29 @@ export async function extraForm(type, data, s, db) {
       throw new Error('Enter a valid patient Member ID.');
     if (!isProvider && s.policy?.status !== 'active')
       throw new Error('Activate your coverage before submitting a claim.');
+    if (isProvider) {
+      // A trusted provider may check coverage for an exact Member ID, not list patients.
+      // This is a role-restricted get; it never requires Firebase Functions.
+      const account = await getDoc(doc(db, 'users', s.user.uid));
+      if (!account.exists() || account.data().role !== 'provider') {
+        throw new Error('Provider access has not been approved. Ask the owner to assign Medical Provider in Staff Center, then refresh your account.');
+      }
+      let policy;
+      try {
+        policy = await getDoc(doc(db, 'policies', customerUid));
+      } catch (error) {
+        if (error.code === 'permission-denied') {
+          throw new Error('Provider coverage lookup is blocked. Deploy the latest Firestore rules with firebase.cmd deploy --only "firestore:rules" and refresh the page.');
+        }
+        throw error;
+      }
+      if (!policy.exists()) {
+        throw new Error('No insurance policy exists for that Member ID. Check the ID with the patient.');
+      }
+      if (policy.data().status !== 'active') {
+        throw new Error('That patient does not have active coverage. Current policy status: ' + String(policy.data().status || 'unknown') + '. Staff must activate the policy before a claim can be submitted.');
+      }
+    }
     const facility = String(data.get('facility') || '').trim();
     const invoiceNumber = String(data.get('invoiceNumber') || '').trim();
     if (!/^[A-Za-z0-9][A-Za-z0-9._/ -]{0,63}$/.test(invoiceNumber))
@@ -353,13 +377,20 @@ export async function extraForm(type, data, s, db) {
       notes.length > 500 || !['Office Visit','Emergency Care','Hospital Stay',
       'Imaging','Medication','Laboratory','Surgery','Other'].includes(serviceType))
       throw new Error('Check your date, service, facility and bill amount.');
-    await addDoc(collection(db, 'claims'), {
-      customerUid, providerUid:isProvider ? s.user.uid : null, submittedBy:s.user.uid,
-      facility,invoiceNumber,serviceDate,serviceType,notes,amount,
-      status:'pending', approvedAmount:0, payoutStatus:'unpaid',
-      decisionNote:'', reviewedBy:null,
-      createdAt:serverTimestamp(), updatedAt:serverTimestamp()
-    });
+    try {
+      await addDoc(collection(db, 'claims'), {
+        customerUid, providerUid:isProvider ? s.user.uid : null, submittedBy:s.user.uid,
+        facility,invoiceNumber,serviceDate,serviceType,notes,amount,
+        status:'pending', approvedAmount:0, payoutStatus:'unpaid',
+        decisionNote:'', reviewedBy:null,
+        createdAt:serverTimestamp(), updatedAt:serverTimestamp()
+      });
+    } catch (error) {
+      if (isProvider && error.code === 'permission-denied') {
+        throw new Error('Provider claim was denied by Firestore. Check the Medical Provider role, active patient coverage, and that the latest Firestore rules are deployed.');
+      }
+      throw error;
+    }
     return { message:'Medical claim submitted for staff review.' };
   }
   if (type === 'ex-review-claim') {

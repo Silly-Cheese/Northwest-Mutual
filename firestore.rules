@@ -186,7 +186,9 @@ service cloud.firestore {
     }
 
     match /policies/{uid} {
-      allow get: if isSelf(uid) || isStaff();
+      // Approved providers may verify a specific member's coverage using their
+      // patient-supplied Member ID, but cannot browse/list policies.
+      allow get: if isSelf(uid) || isStaff() || isProvider();
       allow list: if isStaff();
       allow create: if isOwner() || (isSelf(uid) && validCustomerPolicy(uid));
       allow update: if isOwner()

@@ -106,3 +106,30 @@ The GitHub Pages site now uses a **responsive application navigation**:
 - The sidebar collapse preference is stored locally in the browser, not in Firebase.
 
 No Firebase Hosting, Firebase Functions, rules changes, or additional dependencies are required for this navigation update. GitHub Pages publishes it from main/docs.
+
+
+## Claim submission fixes (November 8, 2026)
+
+- Corrected a browser HTML invoice input pattern that was rejected by the newer JavaScript /v regular expression parser. Invoice # is still required, and JavaScript plus Firestore rules validate it.
+- Every provider claim now verifies the **specific patient-supplied Member ID** against an active policy before writing. The provider sees clear errors for an unknown ID, a pending/suspended policy, or missing access.
+- Firestore rules allow an approved Medical Provider to **get one policy by its Member ID** for coverage verification. They still cannot list/browse policies or customer profiles.
+- Added a relative SVG favicon to reduce missing-icon 404 requests on GitHub Pages. If another 404 appears, inspect its failed URL under DevTools > Network; a 404 may refer to a different asset.
+- Existing claims and existing account records remain untouched.
+
+**The updated Firestore rules are REQUIRED.** Pull the repo and redeploy Firestore **rules only**:
+
+~~~powershell
+cd "$HOME\Northwest-Mutual"
+git pull
+firebase.cmd use northwest-mutual-59cca
+firebase.cmd deploy --only "firestore:rules"
+~~~
+
+If a medical provider still receives "Missing or insufficient permissions":
+
+1. Confirm their email/password account exists, and the owner has assigned **Medical Provider** under Staff Center.
+2. Sign out and sign in again or use My Account > Refresh access.
+3. Confirm the patient's **Member ID** is correct and the patient's **policy is ACTIVE**. The provider portal checks this before submission.
+4. Confirm the Firestore rules deployment succeeded. Hosting is **GitHub Pages only**. No Firebase Functions or Firebase Hosting is needed.
+
+Do not put patient data or real medical insurance details into this fictional RP portal.
