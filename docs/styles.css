@@ -31,3 +31,69 @@ textarea.input.area{min-height:90px;resize:vertical;line-height:1.5}
 .table-wrap td .muted.small{max-width:310px;overflow-wrap:anywhere}
 .notice{overflow-wrap:anywhere}
 @media(max-width:700px){.grid-2.tight{grid-template-columns:1fr}.inline-form{align-items:stretch}.inline-form .input.compact{min-width:135px}.claim-layout{grid-template-columns:1fr}}
+
+
+/* Generation 3: printable insurance cards, reports and small-screen refinements */
+.required-label{color:#ac3e43;font-weight:800;font-size:.71rem;background:#fff1f0;border:1px solid #f4dbd9;padding:3px 7px;border-radius:7px;margin-left:5px}
+.invoice-ref{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;overflow-wrap:anywhere;color:#1a557c;font-size:.83rem}
+.invoice-divider{color:#9cacbc}
+.print-toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:16px 0 23px}
+.print-sheet{max-width:690px;margin:12px auto 20px}
+.insurance-card{background:linear-gradient(115deg,#113a6a 0%,#155d96 67%,#147caf 100%);color:#fff;border-radius:19px;padding:30px 36px;min-height:350px;position:relative;overflow:hidden;box-shadow:0 16px 30px rgba(11,51,96,.22);border:1px solid rgba(255,255,255,.16)}
+.insurance-card::before{content:"";position:absolute;width:260px;height:260px;right:-75px;top:-105px;border:43px solid rgba(255,255,255,.06);border-radius:50%;pointer-events:none}
+.insurance-card-head,.insurance-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:12px;position:relative;z-index:1}
+.insurance-card-brand{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-weight:800;letter-spacing:.015em;font-size:1.07rem}
+.insurance-card-sub{letter-spacing:.19em;font-size:.65rem;color:#c2e1f7;font-weight:700;margin-top:3px}
+.insurance-card-mark{border:1px solid #ffffff55;border-radius:12px;padding:10px;font-size:.83rem;font-weight:800;min-width:46px;text-align:center}
+.insurance-card-rule{height:1px;background:#ffffff38;margin:23px 0}
+.insurance-card-main{display:grid;grid-template-columns:1fr 1fr;gap:20px 34px;position:relative;z-index:1}
+.insurance-card-field{min-width:0}
+.insurance-card-field span{display:block;color:#c6dff2;font-size:.65rem;letter-spacing:.13em;font-weight:800;margin-bottom:5px}
+.insurance-card-field strong{display:block;font-size:1.03rem;line-height:1.3;overflow-wrap:anywhere}
+.insurance-card-field.member-wide{grid-column:1/-1}
+.insurance-card-field .member-id{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.83rem;letter-spacing:.04em}
+.insurance-card-bottom{border-top:1px solid #ffffff35;padding-top:15px;margin-top:23px;font-size:.65rem;letter-spacing:.075em;color:#e5f4ff;font-weight:700}
+.metric-figure{font-size:clamp(1.5rem,2.5vw,2.1rem);overflow-wrap:anywhere}
+.report-summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+.report-sections{margin:18px 0;align-items:stretch}
+.reports-filter{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
+.reports-filter .field{margin:0;min-width:170px;flex:1}
+.reports-filter .field:first-child{flex:2;min-width:230px}
+.reports-filter .btn{white-space:nowrap}
+.bar-chart-item{margin:15px 0}
+.bar-chart-line{display:flex;justify-content:space-between;gap:15px;margin:0 0 7px;font-size:.86rem;font-weight:700;color:#48637c}
+.bar-track{background:#e6eef5;height:11px;border-radius:9px;overflow:hidden}
+.bar-fill{height:100%;border-radius:9px;background:linear-gradient(90deg,#185b96,#2a90c4)}
+@media(max-width:950px){
+  .report-summary{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topbar-inner{column-gap:12px}
+  .nav-links{scrollbar-width:thin}
+}
+@media(max-width:680px){
+  .report-summary{grid-template-columns:1fr 1fr;gap:11px}
+  .report-summary .stat{padding:17px}
+  .report-summary .stat .metric-figure{font-size:1.25rem;letter-spacing:-.05em}
+  .report-sections{grid-template-columns:1fr}
+  .reports-filter .field,.reports-filter .field:first-child{flex:1 1 100%;min-width:0}
+  .reports-filter .btn{flex:1 1 auto}
+  .insurance-card{padding:24px 19px;min-height:0}
+  .insurance-card-main{gap:15px}
+  .insurance-card-brand{font-size:.85rem}
+  .insurance-card-sub{font-size:.53rem;letter-spacing:.12em}
+  .insurance-card-field strong{font-size:.89rem}
+  .insurance-card-bottom{font-size:.52rem}
+  .topbar .nav-links{overflow-x:auto;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+  .topbar .nav-link{scroll-snap-align:start}
+}
+@media(max-width:370px){.report-summary{grid-template-columns:1fr}.insurance-card-main{grid-template-columns:1fr}}
+@media print{
+  @page{size:auto;margin:13mm}
+  body.printing-card{background:white!important;color:black}
+  body.printing-card .topbar,body.printing-card .footer{display:none!important}
+  body.printing-card main{padding:0!important}
+  body.printing-card main .shell{max-width:none;padding:0!important}
+  body.printing-card main .shell > :not(.card-print-page){display:none!important}
+  body.printing-card .card-print-page > :not(.print-sheet){display:none!important}
+  body.printing-card .print-sheet{margin:0 auto!important;max-width:690px!important;display:block!important}
+  body.printing-card .insurance-card{print-color-adjust:exact;-webkit-print-color-adjust:exact;box-shadow:none!important;break-inside:avoid;page-break-inside:avoid}
+}

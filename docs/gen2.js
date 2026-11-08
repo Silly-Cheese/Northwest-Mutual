@@ -137,6 +137,9 @@ export function renderClaims(s) {
     '<section class="card card-pad"><h3>Submit a medical claim</h3>' +
     (canFile ? '<form data-form="ex-submit-claim">' + field +
     '<div class="field"><label class="label">Facility name</label><input class="input" name="facility" maxlength="100" required placeholder="e.g. Northstar Medical Center"></div>' +
+    '<div class="field"><label class="label">Invoice # <span class="required-label">Required</span></label>' +
+      '<input class="input" name="invoiceNumber" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._/ -]{0,63}" autocomplete="off" placeholder="e.g. NMC-2026-0042" required>' +
+      '<p class="form-help">Enter the invoice number from the fictional medical bill. Claims cannot be submitted without one.</p></div>' +
     '<div class="field"><label class="label">Treatment / service date</label><input class="input" type="date" name="serviceDate" required></div>' +
     '<div class="field"><label class="label">Service type</label><select class="input" name="serviceType">' +
     ['Office Visit','Emergency Care','Hospital Stay','Imaging','Medication','Laboratory','Surgery','Other']
@@ -158,10 +161,11 @@ export function renderClaimsTable(s, claims) {
   if (!claims.length) return '<div class="card empty"><div class="empty-icon">▣</div>' +
     '<h3>No claims yet</h3><p class="muted">Submitted medical claims will appear here.</p></div>';
   return '<div class="card card-pad"><div class="table-wrap"><table><thead><tr>' +
-    '<th>Claim / Patient</th><th>Facility & service</th><th>Requested</th><th>Decision</th><th>RP payout</th></tr></thead><tbody>' +
+    '<th>Claim / Patient</th><th>Invoice #</th><th>Facility & service</th><th>Requested</th><th>Decision</th><th>RP payout</th></tr></thead><tbody>' +
     claims.map(c => '<tr><td><strong>' + h(users[c.customerUid]?.displayName || 'Member') +
       '</strong><div class="muted small">' + h(c.id.slice(0,10)) + ' • ' + date(c.createdAt) +
-      '</div></td><td>' + h(c.facility) + '<div class="muted small">' + h(c.serviceType) +
+      '</div></td><td><strong class="invoice-ref">' + h(c.invoiceNumber || 'Older claim · not recorded') +
+      '</strong></td><td>' + h(c.facility) + '<div class="muted small">' + h(c.serviceType) +
       ' • ' + h(c.serviceDate) + '</div></td><td>' + cash(c.amount) + '</td><td>' +
       statusBadge(c.status) + (c.decisionNote ? '<div class="muted small">' + h(c.decisionNote) + '</div>' : '') +
       '</td><td>' + cash(c.approvedAmount) + '<div class="muted small">' +
@@ -189,7 +193,7 @@ export function renderStaffCenter(s) {
   const reviewCards = pending.map(c => '<article class="card card-pad"><div class="plan-titlebar">' +
     '<div><span class="eyebrow">PENDING CLAIM</span><h3>' + h(byUid[c.customerUid]?.displayName || c.customerUid) +
     '</h3></div>' + statusBadge(c.status) + '</div><p class="muted small">' +
-    h(c.facility) + ' • ' + h(c.serviceType) + ' • ' + h(c.serviceDate) +
+    '<strong>Invoice # ' + h(c.invoiceNumber || 'Not recorded (older claim)') + '</strong><span class="invoice-divider"> • </span>' + h(c.facility) + ' • ' + h(c.serviceType) + ' • ' + h(c.serviceDate) +
     (c.providerUid ? ' • Provider submitted' : ' • Customer submitted') + '</p><p><strong>Requested: ' +
     cash(c.amount) + '</strong></p>' +
     (c.notes ? '<p class="muted small">Notes: ' + h(c.notes) + '</p>' : '') +
@@ -203,7 +207,7 @@ export function renderStaffCenter(s) {
     '<textarea name="decisionNote" class="input area" rows="2" maxlength="500"></textarea></div>' +
     '<button class="btn btn-primary" type="submit">Save claim decision</button></form></article>').join('');
   const payableRows = payables.map(c => '<tr><td>' + h(byUid[c.customerUid]?.displayName || c.customerUid) +
-    '<div class="muted small">' + h(c.facility) + '</div></td><td>' + cash(c.approvedAmount) +
+    '<div class="muted small">Invoice # ' + h(c.invoiceNumber || 'Older claim') + ' · ' + h(c.facility) + '</div></td><td>' + cash(c.approvedAmount) +
     '</td><td>' + statusBadge(c.status) + '</td><td><button class="btn btn-primary btn-small" ' +
     'data-action="ex-pay-claim" data-id="' + h(c.id) + '">Record RP payout</button></td></tr>').join('');
   return '<section class="hero-banner"><span class="eyebrow">STAFF WORKSPACE</span>' +
@@ -338,6 +342,9 @@ export async function extraForm(type, data, s, db) {
     if (!isProvider && s.policy?.status !== 'active')
       throw new Error('Activate your coverage before submitting a claim.');
     const facility = String(data.get('facility') || '').trim();
+    const invoiceNumber = String(data.get('invoiceNumber') || '').trim();
+    if (!/^[A-Za-z0-9][A-Za-z0-9._/ -]{0,63}$/.test(invoiceNumber))
+      throw new Error('Invoice # is required (1–64 characters: letters, digits, spaces, dots, dashes or slashes).');
     const serviceDate = String(data.get('serviceDate') || '');
     const serviceType = String(data.get('serviceType') || '');
     const notes = String(data.get('notes') || '').trim();
@@ -348,7 +355,7 @@ export async function extraForm(type, data, s, db) {
       throw new Error('Check your date, service, facility and bill amount.');
     await addDoc(collection(db, 'claims'), {
       customerUid, providerUid:isProvider ? s.user.uid : null, submittedBy:s.user.uid,
-      facility,serviceDate,serviceType,notes,amount,
+      facility,invoiceNumber,serviceDate,serviceType,notes,amount,
       status:'pending', approvedAmount:0, payoutStatus:'unpaid',
       decisionNote:'', reviewedBy:null,
       createdAt:serverTimestamp(), updatedAt:serverTimestamp()

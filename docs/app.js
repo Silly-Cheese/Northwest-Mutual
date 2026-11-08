@@ -3,6 +3,9 @@ import {
   renderPlanManager, renderClaims, renderStaffCenter,
   extraAction, extraForm
 } from './gen2.js';
+import {
+  renderInsuranceCard, renderReports, reportsAction, reportsForm
+} from './gen3.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
@@ -42,7 +45,8 @@ const planMap = Object.fromEntries(plans.map(p => [p.id, p]));
 const state = {
   loading: true, user: null, profile: null, policy: null, owner: false,
   tab: 'dashboard', mode: 'login', notice: null, busy: false,
-  adminUsers: [], adminPolicies: [], planCatalog: [], claims: [], editPlanId: null
+  adminUsers: [], adminPolicies: [], planCatalog: [], claims: [], editPlanId: null,
+  reportStatus: 'all', reportQuery: ''
 };
 
 function esc(value) {
@@ -137,11 +141,11 @@ function authPage() {
 
 function navbar() {
   const nav = [
-    ['dashboard', 'Dashboard'], ['plans', 'Insurance Plans'], ['account', 'My Account']
+    ['dashboard', 'Dashboard'], ['plans', 'Insurance Plans'], ['card', 'Insurance Card'], ['account', 'My Account']
   ];
   if (state.profile?.role === 'provider') nav.push(['claims', 'Provider Claims']);
   else nav.push(['claims', 'Medical Claims']);
-  if (state.owner || state.profile?.role === 'staff') nav.push(['staff', 'Staff Center']);
+  if (state.owner || state.profile?.role === 'staff') nav.push(['staff', 'Staff Center'], ['reports', 'Reports']);
   if (state.owner) nav.push(['manage-plans', 'Manage Plans'], ['owner', 'Owner Desk']);
   return '<header class="topbar"><div class="shell topbar-inner">' + brand() +
     '<nav class="nav-links" aria-label="Main navigation">' +
@@ -166,7 +170,11 @@ function dashboardPage() {
       '<div class="info-row"><span>Monthly RP premium</span><span>' + (currentPlan ? money(currentPlan.price) : '—') + '</span></div>' +
       '<div class="info-row"><span>Policy requested</span><span>' + dateText(policy.createdAt) + '</span></div></div>' +
       (policy.status === 'pending' ? '<p class="muted small">Your coverage request is awaiting owner review. You may still change plans.</p>' : '') +
-      '<button class="btn btn-secondary" data-action="tab" data-tab="plans">View insurance plans</button></div>'
+      '<div class="table-actions">' +
+      '<button class="btn btn-secondary" data-action="tab" data-tab="plans">View insurance plans</button>' +
+      (policy.status === 'active'
+        ? '<button class="btn btn-primary" data-action="tab" data-tab="card">Insurance Card</button>' : '') +
+      '</div></div>'
     : '<div class="card empty"><div class="empty-icon">✚</div><h3>No insurance plan yet</h3>' +
       '<p class="muted">Pick a medical plan to submit your first coverage request. No policy number needed.</p>' +
       '<button class="btn btn-primary" data-action="tab" data-tab="plans">Explore medical plans</button></div>';
@@ -276,6 +284,9 @@ function render() {
   let page = '';
   if (state.tab === 'plans') page = renderCatalog(state);
   else if (state.tab === 'claims') page = renderClaims(state);
+  else if (state.tab === 'card') page = renderInsuranceCard(state, findPlan);
+  else if (state.tab === 'reports' && (state.owner || state.profile?.role === 'staff'))
+    page = renderReports(state, findPlan);
   else if (state.tab === 'staff' && (state.owner || state.profile?.role === 'staff')) page = renderStaffCenter(state);
   else if (state.tab === 'manage-plans' && state.owner) page = renderPlanManager(state);
   else if (state.tab === 'account') page = accountPage() +
@@ -332,6 +343,8 @@ onAuthStateChanged(auth, async user => {
   state.planCatalog = [];
   state.claims = [];
   state.editPlanId = null;
+  state.reportStatus = 'all';
+  state.reportQuery = '';
   state.tab = 'dashboard';
   state.notice = null;
   render();
@@ -368,7 +381,7 @@ document.addEventListener('click', async event => {
   if (action === 'tab') {
     state.tab = button.dataset.tab;
     state.notice = null; render();
-    if (['owner', 'staff', 'claims', 'plans', 'manage-plans'].includes(state.tab)) {
+    if (['owner', 'staff', 'claims', 'plans', 'manage-plans', 'reports'].includes(state.tab)) {
       try {
         await loadExtras(state, db);
         if (state.owner || state.profile?.role === 'staff') await loadAdmin();
@@ -414,6 +427,9 @@ document.addEventListener('click', async event => {
     } else if (action === 'reload-owner') {
       await loadAdmin();
       notify('Customer records and policies refreshed.');
+    } else if (action.startsWith('gen3-')) {
+      const result = reportsAction(action, state);
+      notify(result.message);
     } else if (action === 'copy-member') {
       await navigator.clipboard.writeText(state.user.uid);
       notify('Member ID copied.');
@@ -472,6 +488,9 @@ document.addEventListener('submit', async event => {
       await sendPasswordResetEmail(auth, String(data.get('email') || '').trim());
       state.mode = 'login';
       notify('If that email is registered, a password reset link has been sent.');
+    } else if (formType.startsWith('gen3-')) {
+      const result = reportsForm(formType, data, state);
+      notify(result.message);
     } else if (formType.startsWith('ex-')) {
       const result = await extraForm(formType, data, state, db);
       await loadExtras(state, db);
