@@ -1,90 +1,75 @@
 # Northwest Mutual RP
 
-Simple, fictional, **medical-only insurance**. Separate from Sterling Mutual.
+A lightweight, fictional medical-only insurance roleplay portal, separate from Sterling Mutual.
 
-## Hosting and services
+## Hosting / architecture
 
-| Feature | Service |
-|---|---|
-| Website | **GitHub Pages only** |
-| Accounts | Firebase Authentication, **Email/Password only** |
-| Data | Cloud Firestore |
-| Access control | Firestore Security Rules + Firebase Auth custom claims |
-| Owner bootstrap | One-time **local** Firebase Admin script |
-| Firebase Hosting | **Not used** |
-| Firebase Functions | **Not used** |
+- Website hosted ONLY on GitHub Pages, directly from main/docs.
+- Firebase Authentication uses email/password only. No Google sign-in. No required email verification.
+- Cloud Firestore stores customer profiles, plans, policies, claims, and staff roles.
+- Firestore Security Rules enforce staff, owner, and provider access.
+- Owner bootstrap runs from a trusted script LOCALLY; it is not a Firebase Function.
+- NO Firebase Hosting and NO Firebase Functions.
 
-No email verification is required. No Google sign-in. Do not enter real patient data or make actual insurance payments; this app is only for roleplay.
+## Generation 2 features
 
-## GitHub Pages setup
+- Owner can create, edit, activate and retire medical insurance plans.
+- Customer accounts automatically get profiles. Customers request a plan; staff can approve or suspend coverage.
+- Customers with active coverage submit fictional medical claims.
+- Approved provider accounts can submit claims using a member ID supplied by the patient.
+- Staff review claims, approve fully or partially, deny claims, add decision notes, and record fictional payouts.
+- Owner has a Staff Center role manager, where existing registered accounts can become staff or providers.
+- Customers and providers can see their own claim history. Staff see the shared review queue.
+- All data is for RP only. Do not enter real patient or insurance data.
 
-The website lives in **docs/** and uses relative links so it works on a GitHub Pages project URL.
+## GitHub Pages activation
 
-1. Visit https://github.com/Silly-Cheese/Northwest-Mutual/settings/pages
-2. Under **Build and deployment**, choose **Deploy from a branch**.
-3. Select branch **main**, folder **/docs**, and click **Save**.
-4. After GitHub Pages reports a successful deployment, open:
-   https://silly-cheese.github.io/Northwest-Mutual/
+Go to https://github.com/Silly-Cheese/Northwest-Mutual/settings/pages
 
-Each subsequent push to main automatically republishes the docs/ website. No build step or GitHub Actions workflow is necessary.
+Choose Deploy from a branch > main > /docs > Save.
 
-## Firebase configuration
+When publishing succeeds, open https://silly-cheese.github.io/Northwest-Mutual/
 
-Firebase project ID: **northwest-mutual-59cca**.
+## Required Firestore security rules deployment
 
-1. In Firebase Console > Authentication > Sign-in method, enable **Email/Password**, leave Google disabled.
-2. In Firebase Console > Authentication > Settings > Authorized domains, add **silly-cheese.github.io** if missing.
-3. Create a Cloud Firestore database if one does not already exist.
-4. Install Node.js and Git, then run these PowerShell commands from your normal user folder, NOT C:\Windows\System32.
+In Firebase Console, enable Authentication > Email/Password. Leave Google disabled.
+Under Authentication > Settings > Authorized domains, add silly-cheese.github.io if it is missing.
+Create a Firestore database if needed.
 
-If this repository has NOT been cloned:
-~~~powershell
-cd $HOME
-git clone https://github.com/Silly-Cheese/Northwest-Mutual.git
-cd Northwest-Mutual
-~~~
+Open PowerShell in your local Northwest-Mutual checkout (NOT in Windows System32):
 
-If it already exists, open its folder and update it:
-~~~powershell
-cd "$HOME\Northwest-Mutual"
-git pull
-~~~
+    cd "$HOME\Northwest-Mutual"
+    git pull
+    npm.cmd install
+    firebase.cmd login
+    firebase.cmd use northwest-mutual-59cca
+    firebase.cmd deploy --only "firestore:rules"
 
-Then:
-~~~powershell
-npm.cmd install
-npm.cmd install -g firebase-tools
-firebase.cmd login
-firebase.cmd use northwest-mutual-59cca
-firebase.cmd deploy --only "firestore:rules"
-~~~
+No Hosting or Functions deploy commands are needed. The Firebase CLI is used ONLY to deploy Firestore security rules. The repository firebase.json configures Firestore only.
 
-**Do not run** firebase deploy for hosting or functions. Firebase CLI is only needed to upload **Firestore security rules**. The repo's firebase.json deliberately has no hosting or functions configuration.
+## One-time owner bootstrap
 
-## One-time owner bootstrap (no cloud function)
+You can continue using the existing local bootstrap if already done.
 
-Your owner account must be granted an Auth custom claim with Firebase Admin credentials, which only a trusted local script can do safely when email verification is disabled. Simply registering an email address does **not** grant owner access.
+Keep the service-account key OUTSIDE your repository. To bootstrap an owner for the first time:
 
-1. In Firebase Console > Project Settings > Service Accounts, generate a service-account private key.
-2. Save the JSON **outside** this GitHub folder, e.g. C:\private\northwest-service-account.json.
-3. Run in the repository's PowerShell:
+    npm.cmd run bootstrap:owner -- --email="OWNER_EMAIL" --key="C:\path\to\service-account.json"
 
-~~~powershell
-npm.cmd run bootstrap:owner -- --email="YOUR_OWNER_EMAIL" --key="C:\private\northwest-service-account.json"
-~~~
+If no account exists, the script creates an email/password owner account and prints a temporary password. If a regular account already exists with that email, it requires an explicitly confirmed Firebase Authentication UID to avoid privilege escalation based on an unverified email. Use the Account > Refresh access button after bootstrap.
 
-If the email account does not exist, the script creates it and prints a temporary password. Sign in and use **Reset password** to choose a personal password.
+## First use after deploying rules
 
-If an account with that email already exists and is not an owner, the script refuses automatic promotion. Confirm the UID is genuinely yours in Firebase Authentication and rerun using **--uid="CONFIRMED_UID"** alongside the email and key arguments. This prevents owner impersonation by someone who registers another person's unverified email address.
+1. Owner signs in and selects Manage Plans. If none exist, click Create 3 starter plans. You can edit them, retire them, and create new plans later.
+2. Customers sign up with email/password, choose a plan, and wait for staff approval.
+3. To add staff, have the person sign up normally, then use Staff Center > Staff & provider accounts to set their role to Staff.
+4. To add a medical provider, assign their role to Medical Provider instead. Ask them to sign out and back in or use Refresh access.
+5. Customers find their fictional Member ID in My Account. They can share it with an approved provider to submit a claim on their behalf.
+6. Staff review claims in Staff Center, choose approved/partially approved/denied, and optionally record a simulated payout.
 
-After bootstrap, sign in and choose Account > **Refresh access**.
-
-Never upload a service-account JSON key or password to GitHub, to docs/, or to public chat.
+SECURITY: Because email verification is not required, confirm people's identities independently before promoting anyone to Staff or Medical Provider. These roles are securely assigned by the owner, never by self-registration.
 
 ## Three generations
 
-- **Generation 1: completed and committed.** Email/password account creation, automatic customer records, three insurance plan tiers, request/approval workflow, owner desk and Firestore security rules.
-- **Generation 2: next.** Claims from customers or authorized providers, approval/partial approval/denial, fictional payout records and history.
-- **Generation 3: final.** Cleaner reporting, printable cards, mobile refinements, optional Doctor-RP integration.
-
-The front end uses only HTML, CSS and JavaScript with Firebase browser SDKs. The Firebase Admin SDK dependency in package.json is exclusively for the one-time local bootstrap script.
+Generation 1: medical coverage foundation, accounts, owner bootstrap.
+Generation 2: plans, staff/provider roles, claims, and RP payouts.
+Generation 3 (future): cards, reporting, mobile refinement, optional Northstar Doctor-RP integration.

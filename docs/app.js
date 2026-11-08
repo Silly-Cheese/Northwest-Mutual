@@ -1,3 +1,8 @@
+import {
+  loadExtras, currentPlan as findPlan, renderCatalog,
+  renderPlanManager, renderClaims, renderStaffCenter,
+  extraAction, extraForm
+} from './gen2.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
@@ -37,7 +42,7 @@ const planMap = Object.fromEntries(plans.map(p => [p.id, p]));
 const state = {
   loading: true, user: null, profile: null, policy: null, owner: false,
   tab: 'dashboard', mode: 'login', notice: null, busy: false,
-  adminUsers: [], adminPolicies: []
+  adminUsers: [], adminPolicies: [], planCatalog: [], claims: [], editPlanId: null
 };
 
 function esc(value) {
@@ -134,7 +139,10 @@ function navbar() {
   const nav = [
     ['dashboard', 'Dashboard'], ['plans', 'Insurance Plans'], ['account', 'My Account']
   ];
-  if (state.owner) nav.push(['owner', 'Owner Desk']);
+  if (state.profile?.role === 'provider') nav.push(['claims', 'Provider Claims']);
+  else nav.push(['claims', 'Medical Claims']);
+  if (state.owner || state.profile?.role === 'staff') nav.push(['staff', 'Staff Center']);
+  if (state.owner) nav.push(['manage-plans', 'Manage Plans'], ['owner', 'Owner Desk']);
   return '<header class="topbar"><div class="shell topbar-inner">' + brand() +
     '<nav class="nav-links" aria-label="Main navigation">' +
     nav.map(([key, title]) =>
@@ -147,7 +155,7 @@ function navbar() {
 
 function dashboardPage() {
   const policy = state.policy;
-  const currentPlan = policy ? planMap[policy.plan] : null;
+  const currentPlan = policy ? findPlan(state, policy.plan) : null;
   const displayName = (state.profile?.displayName || 'there').split(' ')[0];
   const name = esc(displayName);
   const status = badge(policy?.status);
@@ -165,7 +173,8 @@ function dashboardPage() {
 
   return '<section class="hero-banner"><span class="eyebrow">YOUR MEDICAL INSURANCE PORTAL</span>' +
     '<h1>Welcome, ' + name + '.</h1><p>Manage your fictional healthcare coverage without unnecessary paperwork or complicated steps.</p>' +
-    (state.owner ? '<button class="btn btn-outline hero-cta" data-action="tab" data-tab="owner">Open Owner Desk</button>' : '') +
+    (state.owner || state.profile?.role === 'staff'
+      ? '<button class="btn btn-outline hero-cta" data-action="tab" data-tab="staff">Open Staff Center</button>' : '') +
     '</section><div class="section-heading"><div><h2>Coverage overview</h2><p class="muted small">A quick look at your insurance account.</p></div></div>' +
     '<div class="grid-3"><div class="card stat"><div class="stat-icon">◈</div><div class="stat-label">Policy status</div><div style="margin-top:13px">' + status + '</div></div>' +
     '<div class="card stat"><div class="stat-icon">✚</div><div class="stat-label">Selected plan</div><div class="stat-number" style="font-size:1.35rem">' +
@@ -230,7 +239,7 @@ function ownerPage() {
   const byId = Object.fromEntries(users.map(u => [u.id, u]));
   const rows = policies.length ? policies.map(p => {
     const person = byId[p.id] || {};
-    const plan = planMap[p.plan];
+    const plan = findPlan(state, p.plan);
     let actions = '';
     if (p.status !== 'active') actions += '<button class="btn btn-primary btn-small" data-action="policy-status" data-uid="' +
       esc(p.id) + '" data-status="active">Activate</button>';
@@ -265,8 +274,15 @@ function render() {
   if (state.loading) { root.innerHTML = boot(); return; }
   if (!state.user) { root.innerHTML = authPage(); return; }
   let page = '';
-  if (state.tab === 'plans') page = plansPage();
-  else if (state.tab === 'account') page = accountPage();
+  if (state.tab === 'plans') page = renderCatalog(state);
+  else if (state.tab === 'claims') page = renderClaims(state);
+  else if (state.tab === 'staff' && (state.owner || state.profile?.role === 'staff')) page = renderStaffCenter(state);
+  else if (state.tab === 'manage-plans' && state.owner) page = renderPlanManager(state);
+  else if (state.tab === 'account') page = accountPage() +
+    '<div class="card card-pad" style="margin-top:17px"><h3>Your Member ID</h3>' +
+    '<p class="muted small">Give this fictional Member ID to an authorized medical provider so they can submit an RP claim on your behalf.</p>' +
+    '<div class="member-code">' + esc(state.user.uid) + '</div>' +
+    '<button class="btn btn-secondary btn-small" data-action="copy-member">Copy Member ID</button></div>';
   else if (state.tab === 'owner' && state.owner) page = ownerPage();
   else page = dashboardPage();
   root.innerHTML = navbar() + '<main><div class="shell">' + noticeMarkup() +
@@ -296,7 +312,7 @@ async function loadPolicy() {
 }
 
 async function loadAdmin() {
-  if (!state.owner) return;
+  if (!state.owner && state.profile?.role !== 'staff') return;
   const [userDocs, policyDocs] = await Promise.all([
     getDocs(collection(db, 'users')), getDocs(collection(db, 'policies'))
   ]);
@@ -313,6 +329,9 @@ onAuthStateChanged(auth, async user => {
   state.owner = false;
   state.adminUsers = [];
   state.adminPolicies = [];
+  state.planCatalog = [];
+  state.claims = [];
+  state.editPlanId = null;
   state.tab = 'dashboard';
   state.notice = null;
   render();
@@ -323,7 +342,8 @@ onAuthStateChanged(auth, async user => {
       state.owner = result.claims.owner === true;
       await ensureProfile(user);
       await loadPolicy();
-      if (state.owner) await loadAdmin();
+      await loadExtras(state, db);
+      if (state.owner || state.profile?.role === 'staff') await loadAdmin();
     }
   } catch (error) {
     state.notice = { message: errorMessage(error), error: true };
@@ -348,8 +368,12 @@ document.addEventListener('click', async event => {
   if (action === 'tab') {
     state.tab = button.dataset.tab;
     state.notice = null; render();
-    if (state.tab === 'owner' && state.owner) {
-      try { await loadAdmin(); render(); } catch (error) { notify(errorMessage(error), true); }
+    if (['owner', 'staff', 'claims', 'plans', 'manage-plans'].includes(state.tab)) {
+      try {
+        await loadExtras(state, db);
+        if (state.owner || state.profile?.role === 'staff') await loadAdmin();
+        render();
+      } catch (error) { notify(errorMessage(error), true); }
     }
     return;
   }
@@ -361,7 +385,8 @@ document.addEventListener('click', async event => {
       state.mode = 'login';
     } else if (action === 'choose-plan') {
       const plan = button.dataset.plan;
-      if (!planMap[plan]) throw new Error('Unknown insurance plan.');
+      if (!state.planCatalog.some(p => p.id === plan && p.active))
+        throw new Error('That insurance plan is unavailable.');
       if (state.policy && state.policy.status !== 'pending') {
         throw new Error('Only the owner may change an active or suspended policy.');
       }
@@ -372,10 +397,11 @@ document.addEventListener('click', async event => {
         createdAt: serverTimestamp(), updatedAt: serverTimestamp()
       });
       await loadPolicy();
+      await loadExtras(state, db);
       state.tab = 'dashboard';
       notify('Your medical plan request is saved and awaiting owner approval.');
     } else if (action === 'policy-status') {
-      if (!state.owner) throw new Error('Owner access required.');
+      if (!state.owner && state.profile?.role !== 'staff') throw new Error('Staff access required.');
       const uid = button.dataset.uid;
       const status = button.dataset.status;
       if (!uid || !['active', 'suspended'].includes(status)) throw new Error('Invalid policy action.');
@@ -388,6 +414,14 @@ document.addEventListener('click', async event => {
     } else if (action === 'reload-owner') {
       await loadAdmin();
       notify('Customer records and policies refreshed.');
+    } else if (action === 'copy-member') {
+      await navigator.clipboard.writeText(state.user.uid);
+      notify('Member ID copied.');
+    } else if (action.startsWith('ex-')) {
+      const result = await extraAction(action, button, state, db);
+      await loadExtras(state, db);
+      if (state.owner || state.profile?.role === 'staff') await loadAdmin();
+      notify(result.message);
     } else if (action === 'reset-current') {
       if (!state.user?.email) throw new Error('You must sign in to reset your password.');
       await sendPasswordResetEmail(auth, state.user.email);
@@ -397,7 +431,8 @@ document.addEventListener('click', async event => {
       state.owner = claims.claims.owner === true;
       await ensureProfile(auth.currentUser);
       await loadPolicy();
-      if (state.owner) await loadAdmin();
+      await loadExtras(state, db);
+      if (state.owner || state.profile?.role === 'staff') await loadAdmin();
       notify(state.owner ? 'Owner access is enabled.' : 'Account access refreshed.');
     }
   } catch (error) {
@@ -437,6 +472,11 @@ document.addEventListener('submit', async event => {
       await sendPasswordResetEmail(auth, String(data.get('email') || '').trim());
       state.mode = 'login';
       notify('If that email is registered, a password reset link has been sent.');
+    } else if (formType.startsWith('ex-')) {
+      const result = await extraForm(formType, data, state, db);
+      await loadExtras(state, db);
+      if (state.owner || state.profile?.role === 'staff') await loadAdmin();
+      notify(result.message);
     } else if (formType === 'profile') {
       const name = String(data.get('name') || '').trim();
       if (!name || name.length > 80) throw new Error('Enter a name up to 80 characters.');

@@ -291,7 +291,7 @@ export async function extraAction(action, button, s, db) {
 function parseMoney(input, label) {
   const num = Number(input);
   if (!String(input).trim() || !Number.isFinite(num) || num < 0 ||
-    num > 1000000 || Math.round(num*100) !== num*100)
+    num > 1000000 || Math.abs(Math.round(num * 100) - num * 100) > 0.000001)
     throw new Error('Enter a valid ' + label + ' between $0 and $1,000,000.');
   return num;
 }
@@ -333,7 +333,7 @@ export async function extraForm(type, data, s, db) {
   if (type === 'ex-submit-claim') {
     const isProvider = provider(s);
     const customerUid = isProvider ? String(data.get('customerUid') || '').trim() : s.user.uid;
-    if (!/^[A-Za-z0-9]{15,128}$/.test(customerUid))
+    if (!/^[A-Za-z0-9_-]{6,128}$/.test(customerUid))
       throw new Error('Enter a valid patient Member ID.');
     if (!isProvider && s.policy?.status !== 'active')
       throw new Error('Activate your coverage before submitting a claim.');
