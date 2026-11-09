@@ -1,0 +1,116 @@
+/* Northwest Mutual RP — Home dashboard refresh */
+.dash-hero{display:flex;position:relative;overflow:hidden;justify-content:space-between;align-items:stretch;gap:24px;background:linear-gradient(117deg,#10385f 0%,#124c7a 66%,#166da6 100%);border:1px solid #1e608f;border-radius:22px;padding:29px 33px;color:#fff;box-shadow:0 14px 30px rgba(20,69,115,.13);min-height:214px}
+.dash-hero:before{content:"";position:absolute;right:-110px;top:-170px;width:360px;height:360px;border:60px solid #ffffff0b;border-radius:50%;pointer-events:none}
+.dash-hero:after{content:"";position:absolute;right:140px;bottom:-250px;width:350px;height:350px;border:1px solid #ffffff17;border-radius:50%;pointer-events:none}
+.dash-hero-main{position:relative;z-index:1;min-width:0;flex:1}
+.dash-eyebrow{display:block;font-size:.68rem;font-weight:800;letter-spacing:.19em;color:#a9d8fa;margin:0 0 11px}
+.dash-hero h1{font-size:clamp(1.58rem,2.4vw,2.35rem);line-height:1.23;letter-spacing:-.045em;color:#fff;margin:0 0 10px}
+.dash-hero p{font-size:.9rem;line-height:1.55;color:#d4e7f6;margin:0;max-width:710px}
+.dash-hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:19px}
+.dash-hero-actions .btn{min-height:39px;font-size:.78rem;padding:9px 13px;border-radius:10px}
+.dash-hero .btn-primary{background:#fff;color:#135c92;box-shadow:0 5px 14px #082b4b26}
+.dash-hero .btn-primary:hover{background:#e6f4fc}
+.dash-hero .btn-outline{border-color:#9ecbec66;background:#ffffff12;color:#f5fbff}
+.dash-hero .btn-outline:hover{background:#ffffff25}
+.dash-hero .btn span:last-child{font-size:1.07rem;line-height:0}
+.dash-hero-aside{position:relative;z-index:1;width:185px;min-width:185px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;border-radius:16px;background:#ffffff0c;border:1px solid #ffffff22;padding:17px;text-align:center}
+.dash-aside-top{font-size:.57rem;letter-spacing:.16em;font-weight:800;color:#cce3f7;white-space:nowrap}
+.dash-aside-mark{display:grid;place-items:center;border:1px solid #ffffff41;width:64px;height:64px;font-size:2rem;color:#e9f8ff;border-radius:20px;background:#ffffff17}
+.dash-aside-bottom{font-size:.58rem;letter-spacing:.14em;color:#bfdff5;font-weight:800}
+.dash-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:20px 0 27px}
+.dash-metrics-three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.dash-metric{background:#fff;border:1px solid #e1eaf2;border-radius:16px;box-shadow:0 5px 24px #16345b07;padding:19px 20px;min-width:0;display:flex;flex-direction:column;gap:9px;min-height:126px}
+.dash-metric-label{color:#6c8399;font-size:.79rem;font-weight:800}
+.dash-metric-value{font-family:'Plus Jakarta Sans',system-ui,sans-serif;font-size:clamp(1.33rem,2.1vw,1.78rem);letter-spacing:-.06em;color:#183b61;overflow-wrap:anywhere;line-height:1.22}
+.dash-metric-caption{color:#8094a8;font-size:.74rem;line-height:1.4;margin-top:auto}
+.dash-metric-caption.dash-metric-accent{color:#24805b}
+.dash-content-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:17px;align-items:stretch}
+.dash-provider-grid{grid-template-columns:1.2fr .8fr}
+.dash-panel{min-width:0;background:#fff;border:1px solid #e0e9f2;border-radius:19px;box-shadow:0 7px 24px #1b45600b;padding:23px 24px;display:flex;flex-direction:column}
+.dash-panel-top{margin-bottom:20px}
+.dash-section-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.dash-section-heading h2{font-size:1.1rem;line-height:1.4;margin:0;color:#183b5e;font-weight:800}
+.dash-section-heading p{margin:4px 0 0;font-size:.77rem;color:#8094a5;line-height:1.4}
+.dash-text-link{border:0;background:transparent;font-size:.74rem;font-weight:800;color:#1c679e;display:inline-flex;align-items:center;gap:6px;padding:4px 1px;white-space:nowrap}
+.dash-text-link:hover{color:#073e6d;text-decoration:underline}
+.dash-cover-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;background:#f3f8fc;border:1px solid #e8eff5;border-radius:13px;margin-bottom:13px}
+.dash-cover-header h3{font-size:1.1rem;margin:5px 0 0;color:#173e64;overflow-wrap:anywhere}
+.dash-mini-label{display:block;font-size:.65rem;font-weight:800;letter-spacing:.115em;color:#8299ae}
+.dash-status{display:inline-flex;white-space:nowrap;max-width:100%;align-items:center;border-radius:40px;padding:5px 9px;font-size:.69rem;font-weight:800;text-transform:capitalize;letter-spacing:.005em;background:#edf2f7;color:#5c7084}
+.dash-status-active,.dash-status-approved,.dash-status-paid{background:#e4f7ee;color:#237451}
+.dash-status-pending,.dash-status-partially_approved{background:#fff3dd;color:#9b6923}
+.dash-status-suspended,.dash-status-denied{background:#ffebed;color:#a13c46}
+.dash-cover-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
+.dash-cover-grid>div{padding:13px 10px;border-bottom:1px solid #edf1f5;min-width:0}
+.dash-cover-grid>div span{display:block;font-size:.72rem;color:#8397a8;margin-bottom:5px}
+.dash-cover-grid>div strong{font-size:.98rem;color:#224462;font-weight:800;overflow-wrap:anywhere}
+.dash-panel-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:auto;padding-top:18px}
+.dash-panel-actions .btn{font-size:.77rem;padding:8px 12px;min-height:37px}
+.dash-claim-list{display:flex;flex-direction:column}
+.dash-claim-row{display:flex;align-items:center;gap:11px;padding:14px 0;border-top:1px solid #eaf0f4}
+.dash-claim-row:first-child{padding-top:0;border-top:0}
+.dash-claim-icon{width:35px;height:35px;flex:0 0 35px;background:#eaf4fc;color:#246aa3;border-radius:11px;display:grid;place-items:center;font-size:1.03rem}
+.dash-claim-main{min-width:0;flex:1}
+.dash-claim-name{font-size:.83rem;font-weight:800;color:#294968;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dash-claim-meta{color:#8a9aab;font-size:.7rem;line-height:1.5;overflow-wrap:anywhere}
+.dash-claim-end{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;max-width:40%}
+.dash-claim-end>strong{font-size:.84rem;color:#224766}
+.dash-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:25px 12px 30px;flex:1}
+.dash-empty-symbol{display:grid;place-items:center;width:45px;height:45px;background:#e7f3fb;border-radius:14px;color:#1e6a9f;font-weight:800;font-size:1.15rem;margin-bottom:12px}
+.dash-empty h3{font-size:.97rem;color:#234867;margin:0 0 4px}
+.dash-empty p{color:#8093a5;font-size:.8rem;max-width:300px;margin:0 0 15px}
+.dash-ops-summary{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.dash-ops-summary>div{background:#f5f8fb;border:1px solid #e9eff4;border-radius:12px;display:flex;flex-direction:column;gap:7px;padding:14px;min-width:0}
+.dash-ops-summary>div span{font-size:.72rem;color:#6e889e}
+.dash-ops-summary>div strong{font-size:1.1rem;color:#214566;overflow-wrap:anywhere}
+.dash-task-list{display:flex;flex-direction:column}
+.dash-task-row{display:flex;gap:15px;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid #ebf0f5}
+.dash-task-row:first-child{border:0;padding-top:0}
+.dash-task-row strong{font-size:.84rem;color:#274963;display:block;margin-top:3px}
+.dash-task-row p{color:#8699ab;font-size:.75rem;margin:2px 0 0;line-height:1.5;overflow-wrap:anywhere}
+.dash-task-tag{background:#eef5fb;color:#326d9e;border-radius:8px;padding:6px 8px;font-size:.68rem;font-weight:800;white-space:nowrap}
+.dash-followup{margin-top:25px}
+.dash-followup>.dash-section-heading{margin-bottom:13px}
+.dash-claim-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.dash-claim-mini{border:1px solid #e1eaf2;border-radius:14px;background:#fff;padding:17px;min-width:0}
+.dash-claim-mini-head{display:flex;gap:8px;justify-content:space-between;align-items:center;margin-bottom:14px}
+.dash-claim-mini-head>span:first-child{font-size:.73rem;color:#6f8295;overflow-wrap:anywhere}
+.dash-claim-mini>strong{display:block;color:#264765;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.85rem}
+.dash-claim-mini>p{margin:5px 0 0;color:#879bad;font-size:.75rem}
+.dash-no-claims{font-size:.85rem;color:#8093a5}
+.dash-steps{display:grid;gap:4px}
+.dash-steps>div{display:flex;align-items:flex-start;gap:13px;padding:10px 0;border-top:1px solid #edf1f5}
+.dash-steps>div:first-child{border:0}
+.dash-steps>div span{font-size:.67rem;color:#18649c;background:#e8f4fc;display:grid;place-items:center;min-width:29px;height:29px;border-radius:8px;font-weight:800}
+.dash-steps>div p{font-size:.8rem;color:#648197;margin:2px 0 0}
+@media(max-width:1250px){
+ .dash-hero-aside{width:152px;min-width:152px}
+ .dash-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .dash-metrics-three{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:820px){
+ .dash-hero-aside{display:none}
+ .dash-content-grid,.dash-provider-grid{grid-template-columns:1fr}
+ .dash-panel{padding:20px}
+ .dash-claim-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:540px){
+ .dash-hero{padding:22px 19px;min-height:0;border-radius:17px}
+ .dash-hero h1{font-size:1.62rem}
+ .dash-hero p{font-size:.82rem}
+ .dash-hero-actions{gap:7px}
+ .dash-hero-actions .btn{padding:9px 11px;font-size:.73rem;flex:1 1 auto}
+ .dash-metrics,.dash-metrics-three{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:13px 0 17px}
+ .dash-metric{padding:15px 13px;min-height:104px;border-radius:13px}
+ .dash-metric-value{font-size:1.24rem}
+ .dash-metric-caption{font-size:.68rem}
+ .dash-panel{padding:17px 15px}
+ .dash-section-heading{gap:8px}
+ .dash-section-heading h2{font-size:1rem}
+ .dash-section-heading p{font-size:.71rem}
+ .dash-text-link{font-size:.7rem}
+ .dash-claim-grid{grid-template-columns:1fr}
+ .dash-ops-summary>div{padding:11px}
+ .dash-task-row{flex-wrap:wrap}
+}
+@media print{.dash-hero,.dash-metrics,.dash-content-grid,.dash-followup{break-inside:avoid}}
