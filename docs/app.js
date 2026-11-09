@@ -9,6 +9,7 @@ import {
 import {
   navigationStart, navigationEnd, canNavigate
 } from './navigation.js';
+import { renderDashboard } from './dashboard.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
@@ -33,17 +34,6 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const root = document.getElementById('app');
-
-// Fictional RP-only plan examples. No actual insurance coverage is offered.
-const plans = [
-  { id: 'basic', name: 'Basic Care', price: 125, coverage: 60, deductible: 750,
-    description: 'A simple starting point for everyday healthcare in your RP.' },
-  { id: 'standard', name: 'Standard Care', price: 225, coverage: 80, deductible: 350,
-    description: 'Balanced fictional coverage for visits and hospital care.', featured: true },
-  { id: 'premium', name: 'Premium Care', price: 350, coverage: 90, deductible: 100,
-    description: 'Our highest fictional coverage level with a lower deductible.' }
-];
-const planMap = Object.fromEntries(plans.map(p => [p.id, p]));
 
 const state = {
   loading: true, user: null, profile: null, policy: null, owner: false,
@@ -171,66 +161,7 @@ function setSidebarCollapsed(collapsed) {
 try { state.navCollapsed = localStorage.getItem('nw-sidebar-collapsed') === 'true'; } catch (_) {}
 
 function dashboardPage() {
-  const policy = state.policy;
-  const currentPlan = policy ? findPlan(state, policy.plan) : null;
-  const displayName = (state.profile?.displayName || 'there').split(' ')[0];
-  const name = esc(displayName);
-  const status = badge(policy?.status);
-  const panel = policy
-    ? '<div class="card card-pad"><div class="plan-titlebar"><h3>Your policy</h3>' + status + '</div>' +
-      '<div class="info-rows"><div class="info-row"><span>Insurance plan</span><span>' + esc(currentPlan?.name || policy.plan) + '</span></div>' +
-      '<div class="info-row"><span>Coverage</span><span>' + esc(currentPlan ? currentPlan.coverage + '%' : '—') + '</span></div>' +
-      '<div class="info-row"><span>Monthly RP premium</span><span>' + (currentPlan ? money(currentPlan.price) : '—') + '</span></div>' +
-      '<div class="info-row"><span>Policy requested</span><span>' + dateText(policy.createdAt) + '</span></div></div>' +
-      (policy.status === 'pending' ? '<p class="muted small">Your coverage request is awaiting owner review. You may still change plans.</p>' : '') +
-      '<div class="table-actions">' +
-      '<button class="btn btn-secondary" data-action="tab" data-tab="plans">View insurance plans</button>' +
-      (policy.status === 'active'
-        ? '<button class="btn btn-primary" data-action="tab" data-tab="card">Insurance Card</button>' : '') +
-      '</div></div>'
-    : '<div class="card empty"><div class="empty-icon">✚</div><h3>No insurance plan yet</h3>' +
-      '<p class="muted">Pick a medical plan to submit your first coverage request. No policy number needed.</p>' +
-      '<button class="btn btn-primary" data-action="tab" data-tab="plans">Explore medical plans</button></div>';
-
-  return '<section class="hero-banner"><span class="eyebrow">YOUR MEDICAL INSURANCE PORTAL</span>' +
-    '<h1>Welcome, ' + name + '.</h1><p>Manage your fictional healthcare coverage without unnecessary paperwork or complicated steps.</p>' +
-    (state.owner || state.profile?.role === 'staff'
-      ? '<button class="btn btn-outline hero-cta" data-action="tab" data-tab="staff">Open Staff Center</button>' : '') +
-    '</section><div class="section-heading"><div><h2>Coverage overview</h2><p class="muted small">A quick look at your insurance account.</p></div></div>' +
-    '<div class="grid-3"><div class="card stat"><div class="stat-icon">◈</div><div class="stat-label">Policy status</div><div style="margin-top:13px">' + status + '</div></div>' +
-    '<div class="card stat"><div class="stat-icon">✚</div><div class="stat-label">Selected plan</div><div class="stat-number" style="font-size:1.35rem">' +
-    esc(currentPlan?.name || 'Not selected') + '</div></div>' +
-    '<div class="card stat"><div class="stat-icon">▣</div><div class="stat-label">Customer account</div><div class="stat-number" style="font-size:1.35rem">Created</div>' +
-    '<span class="muted small">No separate record setup</span></div></div>' +
-    '<div class="section-heading"><h2>Your insurance</h2></div><div class="grid-2">' + panel +
-    '<div class="card card-pad"><span class="kicker">GENERATION 2 PREVIEW</span><h3 style="margin-top:17px">Medical claims are coming next</h3>' +
-    '<p class="muted">In Generation 2, you and approved medical providers will be able to submit bills, see claim decisions and review simulated payments.</p>' +
-    '<div class="inline-tips"><span>ℹ</span><span>For now, Generation 1 handles customer accounts, insurance plans and owner approvals.</span></div></div></div>';
-}
-
-function plansPage() {
-  const selected = state.policy?.plan;
-  const canChoose = !state.policy || state.policy.status === 'pending';
-  return '<div class="section-heading" style="margin-top:0"><div><span class="eyebrow">YOUR COVERAGE CHOICES</span>' +
-    '<h2>Medical insurance plans</h2><p class="muted">Straightforward fictional plans for your roleplay.</p></div>' +
-    (state.policy ? badge(state.policy.status) : '') + '</div>' +
-    '<div class="grid-3">' + plans.map(p => {
-      const chosen = selected === p.id;
-      const buttonText = !canChoose ? (chosen ? 'Current plan' : 'Changes require owner') :
-        (chosen ? 'Plan selected' : 'Request this plan');
-      return '<article class="card plan ' + (p.featured ? 'featured' : '') + '">' +
-        '<div class="plan-titlebar"><h3 class="plan-title">' + esc(p.name) + '</h3>' +
-        (p.featured ? '<span class="pill-note">POPULAR</span>' : '') + '</div>' +
-        '<p class="plan-description">' + esc(p.description) + '</p>' +
-        '<div class="plan-price">' + money(p.price) + '<span> / RP month</span></div>' +
-        '<div class="plan-metric"><span>Fictional coverage</span><strong>' + p.coverage + '%</strong></div>' +
-        '<div class="plan-metric"><span>RP deductible</span><strong>' + money(p.deductible) + '</strong></div>' +
-        '<div class="plan-metric"><span>Approval</span><strong>Owner review</strong></div>' +
-        '<div class="plan-bottom"><button class="btn ' + (chosen ? 'btn-secondary' : 'btn-primary') +
-        ' btn-full" data-action="choose-plan" data-plan="' + p.id + '"' +
-        (!canChoose || chosen ? ' disabled' : '') + '>' + buttonText + '</button></div></article>';
-    }).join('') + '</div><div class="inline-tips" style="margin-top:20px"><span>ℹ</span>' +
-    '<span>All displayed prices and coverage percentages are fictional RP terms. Selecting a plan submits a request; it does not activate coverage until an owner approves it.</span></div>';
+  return renderDashboard(state, findPlan);
 }
 
 function accountPage() {

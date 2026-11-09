@@ -130,3 +130,27 @@
  .nw-page-area main{padding:0!important}
  .nw-page-area main .shell{max-width:none!important;padding:0!important}
 }
+
+
+/* Desktop: do not display the mobile hamburger or mobile close icon.
+   Both inherited display:grid from the generic .nw-icon-button declaration. */
+.nw-page-header .nw-menu-toggle,
+.nw-sidebar-top .nw-drawer-close { display:none; }
+.nw-sidebar-top{padding:15px 14px}
+.nw-wordmark{padding:7px 3px;gap:10px}
+.nw-wordmark-copy strong{font-size:.94rem}
+.nw-policy-provider{background:#64baff}
+@media(max-width:920px){
+  .nw-page-header .nw-menu-toggle,
+  .nw-sidebar-top .nw-drawer-close{display:grid}
+  .nw-sidebar-top{padding:15px 16px}
+  .nw-compact .nw-sidebar-top{padding:15px 16px}
+  .nw-wordmark{padding:7px 3px}
+}
+@media(max-width:680px){
+  .nw-page-header .nw-menu-toggle{display:grid}
+}
+@media print{
+  .nw-page-header .nw-menu-toggle,
+  .nw-sidebar-top .nw-drawer-close{display:none!important}
+}

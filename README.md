@@ -133,3 +133,16 @@ If a medical provider still receives "Missing or insufficient permissions":
 4. Confirm the Firestore rules deployment succeeded. Hosting is **GitHub Pages only**. No Firebase Functions or Firebase Hosting is needed.
 
 Do not put patient data or real medical insurance details into this fictional RP portal.
+
+
+## Dashboard and navigation polish
+
+The homepage is now role-aware and shows **live Firestore information rather than Generation 1/2 placeholder text**:
+- **Customer:** active coverage and plan terms, counts of submitted and pending claims, recent claim activity, insurance card and new-claim shortcuts.
+- **Medical provider:** submitted claims, reviews, approvals, recorded RP payouts, and a short guide to Member ID and required invoice number.
+- **Staff and owner:** actionable claim review and coverage requests, active policies, unpaid approved RP payouts, and recent activity.
+- Mobile quick navigation now prioritizes the correct pages for each role.
+- Fixed a CSS specificity conflict causing a mobile hamburger icon and an unnecessary drawer-close X to appear on desktop, compressing the sidebar brand.
+- The original stale Generation 2 preview and hard-coded plan page were removed; the Firestore plan catalog is the source of truth.
+
+This update changes only the static GitHub Pages files in docs/. No Firebase Hosting, Firebase Functions, or Firestore rules deployment is necessary.

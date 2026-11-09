@@ -78,17 +78,24 @@ export function navigationStart(state) {
   const role = getRole(state);
   const name = state.profile?.displayName || state.user?.displayName || state.user?.email || 'Member';
   const policy = state.policy?.status || 'none';
-  const policyMessage = policy === 'active' ? 'Coverage active' :
+  const policyMessage = state.profile?.role === 'provider'
+    ? 'Provider access enabled'
+    : policy === 'active' ? 'Coverage active' :
     policy === 'pending' ? 'Coverage pending' :
     policy === 'suspended' ? 'Coverage suspended' : 'Coverage not active';
   const menuItems = groups.map(group =>
     '<div class="nw-nav-group"><div class="nw-nav-caption">' + escapeText(group.label) + '</div>' +
     group.items.map(item => navButton(item,state)).join('') + '</div>'
   ).join('');
-  const quickTabs = [
-    ['dashboard','Home','dashboard'], ['plans','Plans','plans'],
-    ['claims','Claims','claims'], ['card','Card','card']
-  ];
+  // Keep the four smallest-screen shortcuts relevant to the signed-in role.
+  const quickTabs = isOps(state)
+    ? [['dashboard','Home','dashboard'], ['staff','Staff','staff'],
+       ['reports','Reports','reports'], ['account','Account','account']]
+    : state.profile?.role === 'provider'
+      ? [['dashboard','Home','dashboard'], ['claims','Claims','claims'],
+         ['plans','Plans','plans'], ['account','Account','account']]
+      : [['dashboard','Home','dashboard'], ['plans','Plans','plans'],
+         ['claims','Claims','claims'], ['card','Card','card']];
   return '<div class="nw-layout' + (state.navCollapsed ? ' nw-compact' : '') +
     (state.navOpen ? ' nw-open' : '') + '">' +
     '<button class="nw-dim" type="button" data-action="nav-close" aria-label="Close navigation menu" tabindex="-1"></button>' +
