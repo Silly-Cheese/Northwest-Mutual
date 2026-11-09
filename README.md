@@ -174,3 +174,21 @@ firebase.cmd deploy --only "firestore:rules"
 ~~~
 
 GitHub Pages publishes the website from main /docs. No Firebase Functions or Hosting are used. The site is for RP only; do not enter real medical or insurance data.
+
+
+## Fix: 403 on submitting a plan change
+
+The initial plan-change Firestore rules contained a reference to an undefined variable (policy.plan) in the request validator. That prevented the new rules from compiling and left the live project without the plan-change permissions. This repository fixes the validator.
+
+**After pulling the latest version, deploy the updated Firestore rules.** GitHub Pages can publish the website but does not publish Firestore rules.
+
+~~~powershell
+cd "$HOME\Northwest-Mutual"
+git pull
+firebase.cmd use northwest-mutual-59cca
+firebase.cmd deploy --only "firestore:rules"
+~~~
+
+Confirm that the terminal prints both "rules file firestore.rules compiled successfully" and "Deploy complete!". Then hard-refresh the website and submit the plan change again. Do not use Firebase Hosting or Functions.
+
+A browser console 403 from a Firestore commit or the banner saying that new rules need deployment means the write is being denied by Firebase; it does *not* mean that GitHub Pages is down.

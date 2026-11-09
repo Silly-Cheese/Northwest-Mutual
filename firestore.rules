@@ -181,7 +181,8 @@ service cloud.firestore {
         && request.resource.data.uid == uid
         && request.resource.data.fromPlan ==
           get(/databases/$(database)/documents/policies/$(uid)).data.plan
-        && request.resource.data.toPlan != policy.plan
+        && request.resource.data.toPlan !=
+          get(/databases/$(database)/documents/policies/$(uid)).data.plan
         && activePlan(request.resource.data.toPlan)
         && request.resource.data.note is string
         && request.resource.data.note.size() <= 240
