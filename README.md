@@ -146,3 +146,31 @@ The homepage is now role-aware and shows **live Firestore information rather tha
 - The original stale Generation 2 preview and hard-coded plan page were removed; the Firestore plan catalog is the source of truth.
 
 This update changes only the static GitHub Pages files in docs/. No Firebase Hosting, Firebase Functions, or Firestore rules deployment is necessary.
+
+
+## Member plan changes and approvals
+
+Customers may now change plans without cancelling their insurance.
+
+1. During initial enrollment, a customer may switch plan selections while the policy is Pending. Staff approval is still needed for first activation.
+2. Active or suspended members open Insurance Plans, compare coverage, RP premiums and deductibles, and select Request a change.
+3. The member reviews their current and requested plans, optionally supplies a note, and sends a pending request. **The existing plan and coverage status remain unchanged.**
+4. Members can withdraw a pending request and submit another. Only one pending request is allowed per member.
+5. Owner and staff open Staff Center -> Plan change requests to approve or decline with an optional decision note.
+6. Approving atomically updates both the request and policy using a Firestore transaction; security rules validate that the member's old plan still matches, the new plan remains active, and the two writes happen together.
+7. Members see their latest request and decision on the Insurance Plans page.
+
+Each member has one latest request record in the planChangeRequests collection, not an unlimited historical ledger. A new request after a decision replaces that latest record. The app retains fictional medical claims, provider submissions and owner plan-management features.
+
+Customers cannot approve their own change. Only authorized staff and owners can review requests. This requires the NEW Firestore rules.
+
+### Deploy from PowerShell
+
+~~~powershell
+cd "$HOME\Northwest-Mutual"
+git pull
+firebase.cmd use northwest-mutual-59cca
+firebase.cmd deploy --only "firestore:rules"
+~~~
+
+GitHub Pages publishes the website from main /docs. No Firebase Functions or Hosting are used. The site is for RP only; do not enter real medical or insurance data.

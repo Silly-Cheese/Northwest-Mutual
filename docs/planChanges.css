@@ -66,3 +66,24 @@
   .pc-review-top{flex-wrap:wrap}
 }
 @media print{.pc-member-panel,.pc-staff-queue{break-inside:avoid}}
+
+
+.pc-current-banner{display:flex;align-items:center;gap:13px;flex-wrap:wrap;padding:14px 18px;margin:0 0 16px;background:#f1f7fc;border:1px solid #dceaf5;border-radius:12px}
+.pc-current-banner>span:first-child{color:#7189a0;font-size:.7rem;font-weight:800;letter-spacing:.1em}
+.pc-current-banner>strong{color:#174e76;font-size:.94rem;overflow-wrap:anywhere}
+.pc-current-banner .status{margin-left:auto}
+.pc-plan-delta{display:block;font-size:.77rem;font-weight:800;color:#337fa8;padding:0 0 4px}
+.pc-staff-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.pc-dash-banner{background:#fff9ed;border:1px solid #eedab7;border-radius:10px;padding:11px 12px;display:flex;flex-direction:column;gap:3px;margin-top:12px}
+.pc-dash-banner strong{font-size:.79rem;color:#815f2d}
+.pc-dash-banner span{font-size:.74rem;color:#937348}
+.dash-metrics-five{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media(max-width:1250px){
+ .dash-metrics-five{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .pc-staff-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:700px){
+ .dash-metrics-five{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .pc-staff-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .pc-current-banner .status{margin-left:0}
+}

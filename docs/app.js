@@ -10,6 +10,7 @@ import {
   navigationStart, navigationEnd, canNavigate
 } from './navigation.js';
 import { renderDashboard } from './dashboard.js';
+import { planChangeAction, planChangeForm } from './planChanges.js';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {
   getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
@@ -39,7 +40,8 @@ const state = {
   loading: true, user: null, profile: null, policy: null, owner: false,
   tab: 'dashboard', mode: 'login', notice: null, busy: false,
   adminUsers: [], adminPolicies: [], planCatalog: [], claims: [], editPlanId: null,
-  reportStatus: 'all', reportQuery: '', navOpen: false, navCollapsed: false
+  reportStatus: 'all', reportQuery: '', navOpen: false, navCollapsed: false,
+  planChange: null, planChanges: [], planChangeTarget: null, planChangeError: null
 };
 
 function esc(value) {
@@ -291,6 +293,10 @@ onAuthStateChanged(auth, async user => {
   state.editPlanId = null;
   state.reportStatus = 'all';
   state.reportQuery = '';
+  state.planChange = null;
+  state.planChanges = [];
+  state.planChangeTarget = null;
+  state.planChangeError = null;
   state.navOpen = false;
   document.body.classList.remove('nw-drawer-visible');
   state.tab = 'dashboard';
@@ -351,8 +357,9 @@ document.addEventListener('click', async event => {
     state.tab = button.dataset.tab;
     state.notice = null; render();
     window.scrollTo({top:0,behavior:'auto'});
-    if (['owner', 'staff', 'claims', 'plans', 'manage-plans', 'reports'].includes(state.tab)) {
+    if (['dashboard', 'account', 'card', 'owner', 'staff', 'claims', 'plans', 'manage-plans', 'reports'].includes(state.tab)) {
       try {
+        await loadPolicy();
         await loadExtras(state, db);
         if (state.owner || state.profile?.role === 'staff') await loadAdmin();
         render();
@@ -397,6 +404,15 @@ document.addEventListener('click', async event => {
     } else if (action === 'reload-owner') {
       await loadAdmin();
       notify('Customer records and policies refreshed.');
+    } else if (action.startsWith('pc-')) {
+      const result = await planChangeAction(action, button, state, db);
+      if (action !== 'pc-select' && action !== 'pc-cancel-target') {
+        await loadPolicy();
+        await loadExtras(state, db);
+        if (state.owner || state.profile?.role === 'staff') await loadAdmin();
+      }
+      notify(result.message);
+      if (action === 'pc-select') window.scrollTo({top:0,behavior:'smooth'});
     } else if (action.startsWith('gen3-')) {
       const result = reportsAction(action, state);
       notify(result.message);
@@ -422,7 +438,10 @@ document.addEventListener('click', async event => {
       notify(state.owner ? 'Owner access is enabled.' : 'Account access refreshed.');
     }
   } catch (error) {
-    notify(errorMessage(error), true);
+    const message = action.startsWith('pc-') && error?.code === 'permission-denied'
+      ? 'Plan change blocked by Firestore permissions. The owner must deploy the updated rules, then refresh.'
+      : errorMessage(error);
+    notify(message, true);
   } finally {
     state.busy = false;
   }
@@ -458,6 +477,12 @@ document.addEventListener('submit', async event => {
       await sendPasswordResetEmail(auth, String(data.get('email') || '').trim());
       state.mode = 'login';
       notify('If that email is registered, a password reset link has been sent.');
+    } else if (formType.startsWith('pc-')) {
+      const result = await planChangeForm(formType, data, state, db);
+      await loadPolicy();
+      await loadExtras(state, db);
+      if (state.owner || state.profile?.role === 'staff') await loadAdmin();
+      notify(result.message);
     } else if (formType.startsWith('gen3-')) {
       const result = reportsForm(formType, data, state);
       notify(result.message);
@@ -477,7 +502,10 @@ document.addEventListener('submit', async event => {
       notify('Profile updated successfully.');
     }
   } catch (error) {
-    notify(errorMessage(error), true);
+    const message = formType.startsWith('pc-') && error?.code === 'permission-denied'
+      ? 'Plan change cannot be saved. Ask the owner to deploy the new Firestore rules and try again.'
+      : errorMessage(error);
+    notify(message, true);
   } finally {
     state.busy = false;
   }

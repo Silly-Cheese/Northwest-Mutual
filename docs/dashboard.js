@@ -63,11 +63,16 @@ function customer(s,plan) {
   const active = p?.status === 'active';
   const submitted = s.claims || [];
   const pending = submitted.filter(c => c.status === 'pending').length;
+  const changing = s.planChange?.status === 'pending';
+  const target = s.planChange && s.planCatalog?.find(p=>p.id===s.planChange.toPlan);
   const buttons = active
-    ? action('claims','Submit a claim','primary') + action('card','View insurance card','outline')
+    ? action('claims','Submit a claim','primary') + action('plans',changing?'Review plan request':'Change my plan','outline') +
+      action('card','Insurance card','outline')
     : action('plans',p?'View insurance plans':'Choose a plan','primary') +
       action('claims','My claims','outline');
-  const heroText = active ? 'Your medical coverage is active. Keep track of your claims and plan in one place.'
+  const heroText = changing
+    ? 'Your change to ' + (target?.name || 'another plan') + ' is awaiting review. Your current coverage stays in place.'
+    : active ? 'Your medical coverage is active. Keep track of your claims and plan in one place.'
     : p?.status === 'pending' ? 'Your insurance request is awaiting approval. You can review your plan in the meantime.'
     : p?.status === 'suspended' ? 'Your coverage is suspended. Contact staff before submitting any new medical claims.'
     : 'Pick a fictional medical insurance plan to get started.';
@@ -81,8 +86,11 @@ function customer(s,plan) {
         '<div><span>Monthly RP premium</span><strong>' + (plan?money(plan.price):'—') + '</strong></div>' +
         '<div><span>RP deductible</span><strong>' + (plan?money(plan.deductible):'—') + '</strong></div>' +
         '<div><span>Requested</span><strong>' + fmtDate(p.createdAt) + '</strong></div></div>' +
+        (changing ? '<div class="pc-dash-banner"><strong>Change requested: '+
+          e(target?.name || s.planChange.toPlan) + '</strong><span>Pending staff approval · Your current plan remains active.</span></div>' : '') +
         '<div class="dash-panel-actions">' + (active?action('card','Insurance card','secondary'):'') +
-        action('plans','Plan details','outline') + '</div></section>'
+        action('plans',changing?'View plan request':active?'Change or compare plans':'Plan details','outline') +
+        '</div></section>'
     : '<section class="dash-panel dash-coverage"><div class="dash-empty">' +
         '<div class="dash-empty-symbol">✚</div><h3>No insurance plan selected</h3>' +
         '<p>Select a medical plan to request fictional coverage. You do not need a policy number to start.</p>' +
@@ -131,13 +139,19 @@ function operations(s,plan) {
   const users=Object.fromEntries((s.adminUsers||[]).map(u=>[u.id,u]));
   const pendingClaims=claims.filter(c=>c.status==='pending');
   const pendingPolicies=policies.filter(p=>p.status==='pending');
+  const pendingChanges=(s.planChanges||[]).filter(p=>p.status==='pending');
   const activePolicies=policies.filter(p=>p.status==='active');
   const unpaid=claims.filter(c=>['approved','partially_approved'].includes(c.status)&&c.payoutStatus==='unpaid');
-  const count=pendingClaims.length+pendingPolicies.length+unpaid.length;
+  const count=pendingClaims.length+pendingPolicies.length+pendingChanges.length+unpaid.length;
   const tasks=[
     ...pendingClaims.slice(0,4).map(c=>({
       label:'Claim review', detail:e(c.invoiceNumber || 'Invoice not recorded')+' · '+e(c.facility||'Medical facility'),
       name:users[c.customerUid]?.displayName||'Member',tag:'Review claim'
+    })),
+    ...pendingChanges.slice(0,4).map(c=>({
+      label:'Plan change',detail:e(plan(s,c.fromPlan)?.name||c.fromPlan)+' → '+
+        e(plan(s,c.toPlan)?.name||c.toPlan),
+      name:users[c.uid]?.displayName||'Member',tag:'Review change'
     })),
     ...pendingPolicies.slice(0,3).map(p=>({
       label:'Coverage request',detail:e(plan(s,p.plan)?.name || p.plan),name:users[p.id]?.displayName||'Member',tag:'Review policy'
@@ -163,8 +177,9 @@ function operations(s,plan) {
       action('reports','View reports','outline')+
       (s.owner?action('manage-plans','Manage plans','outline'):''),
       s.owner?'OWNER PORTAL':'STAFF PORTAL') +
-    '<div class="dash-metrics">' +
+    '<div class="dash-metrics dash-metrics-five">' +
       metric('Claims to review',String(pendingClaims.length),'Awaiting a decision') +
+      metric('Plan changes',String(pendingChanges.length),'Members requesting a change') +
       metric('Policy requests',String(pendingPolicies.length),'Awaiting activation') +
       metric('Active policies',String(activePolicies.length),'Currently enrolled') +
       metric('RP payouts due',String(unpaid.length),'Approved, not yet recorded') +

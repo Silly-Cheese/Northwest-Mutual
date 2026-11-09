@@ -57,7 +57,10 @@ function navButton(item, state, extraClass='') {
   const [key,label,iconName] = item;
   const active = state.tab === key;
   const pending = key === 'staff' && isOps(state)
-    ? (state.claims || []).filter(c => c.status === 'pending').length : 0;
+    ? (state.claims || []).filter(c => c.status === 'pending').length +
+      (state.adminPolicies || []).filter(p => p.status === 'pending').length +
+      (state.planChanges || []).filter(c => c.status === 'pending').length
+    : key === 'plans' && state.planChange?.status === 'pending' ? 1 : 0;
   return '<button type="button" class="nw-link ' + extraClass + (active ? ' nw-current' : '') +
     '" data-action="tab" data-tab="' + escapeText(key) +
     '" title="' + escapeText(label) + '"' +

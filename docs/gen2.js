@@ -1,6 +1,7 @@
 import {
   collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, query, where, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
+import { loadPlanChanges, renderPlanChangePanel, renderPlanChangeStaff } from './planChanges.js';
 
 // Generation 2: medical-only fictional claims, provider and staff workflows.
 // Staff/provider roles are granted by the owner, never by public registration.
@@ -51,6 +52,14 @@ export async function loadExtras(s, db) {
     where('customerUid', '==', s.user.uid)));
   s.claims = result.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  // New rules may not be deployed yet; keep the rest of the portal usable.
+  s.planChangeError = null;
+  try { await loadPlanChanges(s, db); }
+  catch (error) {
+    s.planChangeError = error?.code || error?.message || 'unavailable';
+    s.planChange = null;
+    s.planChanges = [];
+  }
 }
 export function currentPlan(s, id) {
   return s.planCatalog?.find(p => p.id === id) || starterPlans.find(p => p.id === id);
@@ -58,28 +67,61 @@ export function currentPlan(s, id) {
 export function renderCatalog(s) {
   const plans = (s.planCatalog || []).filter(p => p.active);
   const policy = s.policy;
-  const canRequest = !policy || policy.status === 'pending';
-  return title('Medical insurance plans',
-    'Choose coverage that works for your fictional medical roleplay.', 'CUSTOMER COVERAGE') +
-    (plans.length ? '<div class="grid-3">' + plans.map(p => {
-      const chosen = p.id === policy?.plan;
-      return '<article class="card plan"><div class="plan-titlebar"><h3>' + h(p.name) +
-      '</h3>' + (chosen ? '<span class="pill-note">SELECTED</span>' : '') + '</div>' +
-      '<p class="plan-description">' + h(p.description) + '</p><div class="plan-price">' +
-      cash(p.price) + '<span> / RP month</span></div>' +
-      '<div class="plan-metric"><span>Fictional coverage</span><strong>' + h(p.coverage) +
-      '%</strong></div><div class="plan-metric"><span>RP deductible</span><strong>' +
-      cash(p.deductible) + '</strong></div><div class="plan-bottom">' +
-      '<button class="btn ' + (chosen ? 'btn-secondary' : 'btn-primary') +
-      ' btn-full" data-action="choose-plan" data-plan="' + h(p.id) +
-      '"' + (!canRequest || chosen ? ' disabled' : '') + '>' +
-      (chosen ? 'Selected plan' : canRequest ? 'Request this plan' : 'Plan change needs review') +
-      '</button></div></article>';
+  const newOrPending = !policy || policy.status === 'pending';
+  const canChange = policy && ['active','suspended'].includes(policy.status);
+  const requestPending = s.planChange?.status === 'pending';
+  const current = policy ? currentPlan(s,policy.plan) : null;
+  const intro = canChange
+    ? 'Compare plans and request different coverage. Your current plan stays in place until staff approve.'
+    : policy?.status === 'pending'
+      ? 'Switch your plan selection any time before staff activate your policy.'
+      : !policy ? 'Choose a plan to request your first fictional insurance policy.'
+        : 'View your plan options. Contact staff to change a cancelled policy.';
+  const changed = s.planChangeError
+    ? '<div class="notice error">Plan changes are temporarily unavailable. Deploy the updated Firestore rules to enable requests.</div>'
+    : renderPlanChangePanel(s);
+  return title('Insurance Plans',intro,'YOUR COVERAGE OPTIONS') +
+    (policy ? '<div class="pc-current-banner"><span>YOUR CURRENT PLAN</span><strong>' +
+      h(current?.name || policy.plan) + '</strong>' + statusBadge(policy.status) + '</div>' : '') +
+    changed + (plans.length ? '<div class="grid-3">' + plans.map(p => {
+      const selected = p.id === policy?.plan;
+      const requested = requestPending && p.id === s.planChange?.toPlan;
+      const comparing = !requestPending && s.planChangeTarget === p.id;
+      let label='Unavailable', action='choose-plan', disabled=true, style='btn-secondary';
+      if (selected) label='Current plan';
+      else if (newOrPending) {
+        label=policy?'Switch selection':'Select this plan';
+        disabled=false;style='btn-primary';
+      } else if (canChange) {
+        label=requested?'Change requested':comparing?'Reviewing selection':'Request a change';
+        action='pc-select';
+        disabled=requestPending || comparing || !!s.planChangeError;
+        style=disabled?'btn-secondary':'btn-primary';
+      } else label='Contact staff to change';
+      const diff=canChange && !selected && current
+        ? Number(p.price)-Number(current.price) : null;
+      return '<article class="card plan pc-plan-card' + (selected?' is-current':'') +
+        (requested?' is-requested':'')+'"><div class="plan-titlebar">' +
+        '<h3 class="plan-title">' + h(p.name) + '</h3>' +
+        (selected?'<span class="pc-plan-tag">CURRENT</span>':
+         requested?'<span class="pc-plan-tag request">REQUESTED</span>':'') + '</div>' +
+        '<p class="plan-description">' + h(p.description) + '</p>' +
+        '<div class="plan-price">' + cash(p.price) + '<span> / RP month</span></div>' +
+        '<div class="plan-metric"><span>Coverage</span><strong>' + h(p.coverage) + '%</strong></div>' +
+        '<div class="plan-metric"><span>Deductible</span><strong>' + cash(p.deductible) + '</strong></div>' +
+        (diff === null ? '' : '<span class="pc-plan-delta">' +
+           (diff<0?'Save '+cash(Math.abs(diff))+' / RP month':
+            diff>0?cash(diff)+' more / RP month':'Same RP monthly premium') + '</span>') +
+        '<div class="plan-bottom"><button type="button" class="btn ' + style +
+        ' btn-full" data-action="' + action + '" data-plan="' + h(p.id) + '"' +
+        (disabled?' disabled':'') + '>' + label + '</button></div></article>';
     }).join('') + '</div>' :
-    '<div class="card empty"><div class="empty-icon">✚</div><h3>Insurance plans not configured yet</h3>' +
-    '<p class="muted">An owner needs to create or initialize plans before members can enroll.</p></div>') +
-    '<div class="inline-tips" style="margin-top:18px">ℹ &nbsp;All terms and dollar values are fictional roleplay examples. Plans require staff review before coverage becomes active.</div>';
+      '<div class="card empty"><h3>No plans available</h3>' +
+      '<p class="muted">The owner can create or reactivate plans from Manage Plans.</p></div>') +
+    '<div class="pc-plan-tips">All amounts are fictional. New coverage requires approval. ' +
+    'Switching an active or suspended policy requires a plan-change request and staff decision.</div>';
 }
+
 export function renderPlanManager(s) {
   if (!s.owner) return '<p>Owner access required.</p>';
   const plans = s.planCatalog || [];
@@ -214,10 +256,13 @@ export function renderStaffCenter(s) {
   return '<section class="hero-banner"><span class="eyebrow">STAFF WORKSPACE</span>' +
     '<h1>Staff Center</h1><p>One place for plan approvals, medical claims and fictional payouts.</p></section>' +
     '<div class="section-heading"><h2>Operations overview</h2><button class="btn btn-outline btn-small" data-action="ex-refresh">Refresh</button></div>' +
-    '<div class="grid-3"><div class="card stat"><div class="stat-label">Pending claims</div><div class="stat-number">' +
+    '<div class="pc-staff-stats"><div class="card stat"><div class="stat-label">Pending claims</div><div class="stat-number">' +
     pending.length + '</div></div><div class="card stat"><div class="stat-label">Waiting for payout</div><div class="stat-number">' +
     payables.length + '</div></div><div class="card stat"><div class="stat-label">Pending policies</div><div class="stat-number">' +
-    policies.filter(p=>p.status==='pending').length + '</div></div></div>' +
+    policies.filter(p=>p.status==='pending').length + '</div></div>' +
+    '<div class="card stat"><div class="stat-label">Plan changes</div><div class="stat-number">' +
+    (s.planChanges || []).filter(p=>p.status==='pending').length + '</div></div></div>' +
+    (s.planChangeError ? '<div class="notice error">Plan changes cannot be loaded until the updated Firestore rules are deployed.</div>' : renderPlanChangeStaff(s)) +
     '<div class="section-heading"><h2>Claim review queue</h2></div>' +
     (pending.length ? '<div class="grid-2">' + reviewCards + '</div>' :
     '<div class="card empty">All submitted claims have been reviewed.</div>') +
