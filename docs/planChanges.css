@@ -1,0 +1,68 @@
+/* Northwest Mutual RP — plan-switching, member requests and staff approvals */
+.pc-member-panel{background:#fff;border:1px solid #dce9f4;border-radius:17px;padding:22px 25px;margin:0 0 21px;box-shadow:0 6px 22px #16436a0b}
+.pc-member-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.pc-member-head h3{font-size:1.21rem;margin:7px 0 6px;color:#183e62}
+.pc-member-head p{color:#72899f;font-size:.84rem;line-height:1.5;margin:0;max-width:570px}
+.pc-plan-pill{color:#155d91;background:#e8f4fc;border:1px solid #d4e8f7;border-radius:30px;padding:8px 12px;font-size:.79rem;font-weight:800;white-space:nowrap}
+.pc-state{display:inline-flex;align-items:center;padding:5px 10px;border-radius:30px;font-size:.73rem;font-weight:800;white-space:nowrap;background:#edf3f8;color:#637c91}
+.pc-state-pending{background:#fff1d7;color:#916019}.pc-state-approved{background:#e2f6ea;color:#216c43}
+.pc-state-denied{background:#ffedee;color:#a3424d}.pc-state-withdrawn{background:#eef1f5;color:#6a7d90}
+.pc-request-current{margin-top:17px;background:#fffaf0;border:1px solid #f2dfb9;padding:16px;border-radius:13px}
+.pc-request-heading{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:9px;color:#6e531e;font-size:.86rem}
+.pc-request-current p{font-size:.83rem;color:#725f3d;line-height:1.55;margin:0 0 11px}
+.pc-small{color:#75899c;font-size:.77rem;line-height:1.5}
+.pc-request-current .pc-small{color:#846b45}
+.pc-footnote{margin:14px 0 0}
+.pc-last-decision{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:15px;padding:13px 15px;background:#f6f9fc;border:1px solid #e5edf5;border-radius:11px;font-size:.81rem;color:#59738b}
+.pc-last-decision p{flex:0 0 100%;margin:0;line-height:1.5}
+.pc-request-form{margin-top:18px;background:#f6fafe;border:1px solid #d5e9f7;padding:20px;border-radius:14px}
+.pc-form-header{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.pc-form-header h3{margin:6px 0 5px;color:#1b4b75;font-size:1.09rem}
+.pc-form-header p{font-size:.77rem;color:#7591a7;margin:0 0 15px}
+.pc-compare-pair{display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;gap:10px;margin:5px 0 13px}
+.pc-compare-pair>div{display:flex;flex-direction:column;gap:5px;padding:14px;border:1px solid #dceaf5;border-radius:11px;background:#fff;min-width:0}
+.pc-compare-pair span:not(.pc-arrow){font-size:.7rem;color:#7c95a9}
+.pc-compare-pair strong{font-size:.86rem;color:#204a71;overflow-wrap:anywhere}
+.pc-compare-pair small{font-size:.75rem;color:#6589a3}
+.pc-arrow{font-size:1.35rem;color:#4388b3;text-align:center}
+.pc-change-detail{color:#286c97;font-size:.82rem;font-weight:700;line-height:1.45;margin:6px 0 15px}
+.pc-form-actions{display:flex;gap:11px;flex-wrap:wrap;align-items:center}
+.pc-form-actions .btn{min-height:39px;font-size:.82rem}
+.pc-review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.pc-review-card{background:#fff;border:1px solid #dce7f0;border-radius:16px;padding:22px;box-shadow:0 6px 21px #1f4b720a;min-width:0}
+.pc-review-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.pc-review-top h3{margin:7px 0 5px;color:#163f62;font-size:1.01rem}
+.pc-review-top p{color:#718ba1;font-size:.79rem;line-height:1.4;margin:0;overflow-wrap:anywhere}
+.pc-review-comparison{display:flex;flex-wrap:wrap;align-items:center;gap:12px;background:#f3f8fc;border-radius:11px;padding:15px;margin:15px 0 8px;font-size:.84rem;font-weight:750;color:#436889}
+.pc-review-comparison>strong{color:#134f82;font-weight:800}
+.pc-review-price{font-size:.76rem;color:#5285a3;margin:0 0 13px}
+.pc-request-reason{background:#f9fbfd;border-left:3px solid #69a3ce;padding:10px 12px;color:#59768c;font-size:.81rem;line-height:1.6;overflow-wrap:anywhere}
+.pc-warning{background:#fff5ec;color:#945e2e;border:1px solid #f1d7ba;padding:12px;border-radius:10px;font-size:.78rem;margin-bottom:12px}
+.pc-review-card .label{margin-top:11px}.pc-review-card textarea{min-height:67px}
+.pc-review-card form>.btn{margin-top:10px}
+.pc-queue-count{background:#e5f2fa;color:#266b96;font-size:.8rem;border-radius:9px;padding:4px 8px;vertical-align:middle;margin-left:5px}
+.pc-empty-queue{display:flex;align-items:center;gap:14px;padding:22px}
+.pc-empty-queue>span{width:37px;height:37px;display:grid;place-items:center;border-radius:12px;color:#2f865d;background:#e6f8ed;flex:0 0 37px;font-size:1.2rem}
+.pc-empty-queue strong{font-size:.88rem;color:#285572}
+.pc-empty-queue p{margin:3px 0 0;color:#7d95a8;font-size:.78rem}
+.pc-recent{margin-top:16px;background:#fff;border:1px solid #e0e9f1;border-radius:13px;padding:13px 16px}
+.pc-recent summary{font-weight:800;color:#3c6787;cursor:pointer;font-size:.8rem;padding:5px}
+.pc-recent .table-wrap{margin-top:12px}
+.pc-plan-card{position:relative}
+.pc-plan-card.is-current{border-color:#5c9bc5;box-shadow:0 4px 18px #25679d10}
+.pc-plan-card.is-requested{border-color:#e5b561;box-shadow:0 4px 18px #b7832410}
+.pc-plan-tag{font-size:.69rem;font-weight:800;padding:5px 8px;background:#e5f4fc;color:#1f699e;border-radius:6px;white-space:nowrap}
+.pc-plan-tag.request{background:#fff4de;color:#89611e}
+.pc-plan-tips{margin-top:18px;background:#edf6fc;border:1px solid #d9eaf6;border-radius:11px;padding:14px 16px;color:#426f8c;font-size:.81rem;line-height:1.5}
+@media(max-width:900px){.pc-review-grid{grid-template-columns:1fr}.pc-member-panel{padding:19px}}
+@media(max-width:590px){
+  .pc-member-head,.pc-form-header{flex-direction:column}
+  .pc-plan-pill{white-space:normal}
+  .pc-compare-pair{grid-template-columns:1fr}
+  .pc-arrow{transform:rotate(90deg)}
+  .pc-request-form{padding:15px}
+  .pc-form-actions .btn{width:100%}
+  .pc-review-card{padding:17px}
+  .pc-review-top{flex-wrap:wrap}
+}
+@media print{.pc-member-panel,.pc-staff-queue{break-inside:avoid}}
